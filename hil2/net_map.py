@@ -1,7 +1,7 @@
 import csv
 
-# Board,Net,Component,Designator,Connector Name,,
-# a_box,GND,P6,1,BMS,,
+import board_net
+
 
 class NetMapEntry:
     def __init__(self, board: str, net: str, component: str, designator: int, connector_name: str):
@@ -12,18 +12,16 @@ class NetMapEntry:
         self.connector_name = connector_name
 
 class NetMap:
-    def __init__(self, entries: list[NetMapEntry]):
-        self.entries = entries
+    def __init__(self, entries: dict[board_net.BoardNet, NetMapEntry]):
+        self.entries: dict[board_net.BoardNet, NetMapEntry] = entries
 
     def get_entry(self, board: str, net: str) -> NetMapEntry:
-        for entry in self.entries:
-            if entry.board == board and entry.net == net:
-                return entry
-        raise ValueError(f"No entry found for board '{board}' and net '{net}'")
+        board_net = board_net.BoardNet(board, net)
+        return self.entries[board_net]
 
     @classmethod
     def from_csv(cls, file_path: str) -> 'NetMap':
-        entries = []
+        entries = {}
         with open(file_path, newline='', encoding='utf-8') as net_map_file:
             reader = csv.DictReader(net_map_file)
             for row in reader:
@@ -34,6 +32,7 @@ class NetMap:
                     designator=int(row['Designator']),
                     connector_name=row['Connector Name']
                 )
-                entries.append(entry)
+                board_net = board_net.BoardNet(entry.board, entry.net)
+                entries[board_net] = entry
         return cls(entries)
 
