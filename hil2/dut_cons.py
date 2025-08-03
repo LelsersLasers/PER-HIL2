@@ -1,15 +1,28 @@
 import json
 
+class HilDutCon:
+	def __init__(self, hil_dut_con: dict):
+		self.device: str = hil_dut_con.get("device")
+		self.port: str = hil_dut_con.get("port")
+
 class DutCon:
-	def __init__(self, dut_con: dict):
-		self.dut_connector: str = dut_con.get("dut").get("connector")
-		self.dut_pin: int = dut_con.get("dut").get("pin")
-		self.hil_device: str = dut_con.get("hil").get("device")
-		self.hil_port: str = dut_con.get("hil").get("port")
+	def __init__(self, connector: str, pin: int):
+		self.connector: str = connector
+		self.pin: int = pin
+
+	@classmethod
+	def from_json(cls, dut_con: dict) -> 'DutCon':
+		return cls(dut_con.get("connector"), dut_con.get("pin"))
 
 class DutBoardCons:
 	def __init__(self, harness_connections: list[dict]):
-		self.harness_connections: list[DutCon] = list(map(DutCon, harness_connections))
+		self.harness_connections: dict[DutCon, HilDutCon] = dict(map(
+			lambda con: (DutCon.from_json(con.get("dut")), HilDutCon(con.get("hil"))),
+			harness_connections
+		))
+
+	def get_hil_device_connection(self, dut_con: DutCon) -> HilDutCon:
+		return self.harness_connections[dut_con]
 
 class DutCons:
 	def __init__(self, dut_connections: dict[DutBoardCons]):
@@ -25,3 +38,6 @@ class DutCons:
 			board_cons[board] = DutBoardCons(connections.get("harness_connections"))
 
 		return cls(board_cons)
+	
+	def get_hil_device_connection(self, board: str, dut_con: DutCon) -> HilDutCon:
+		return self.dut_connections[board].get_hil_device_connection(dut_con)

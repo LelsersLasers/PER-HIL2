@@ -26,8 +26,8 @@ class Hil2:
 
 	def set_ao(self, board: str, net: str, value: float) -> None:
 		net_map_entry = self.net_map.get_entry(board, net)
-		net_map_entry.component
-		net_map_entry.designator
+		dut_con = dut_cons.DutCon(net_map_entry.connector_name, net_map_entry.designator)
+		hil_device_con = self.dut_cons.get_hil_device_connection(board, dut_con)
 
 	def hiZ_ao(self, board: str, net: str) -> None:
 		...
