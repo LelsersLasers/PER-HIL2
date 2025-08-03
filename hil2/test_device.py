@@ -7,10 +7,18 @@ class AdcConfig:
 		self.five_v_reference_v: float = adc_config.get("5v_reference_v")
 		self.twenty_four_v_reference_v: float = adc_config.get("24v_reference_v")
 
+	def raw_to_5v(self, raw_value: int) -> float:
+		...
+	def raw_to_24v(self, raw_value: int) -> float:
+		...
+
 class DacConfig:
 	def __init__(self, dac_config: dict):
 		self.bit_resolution: int = dac_config.get("bit_resolution")
 		self.reference_v: float = dac_config.get("reference_v")
+
+	def v_to_raw(self, value: float) -> int:
+		...
 
 class PotConfig:
 	def __init__(self, pot_config: dict):
