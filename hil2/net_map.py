@@ -4,7 +4,13 @@ import board_net
 
 
 class NetMapEntry:
-    def __init__(self, board: str, net: str, component: str, designator: int, connector_name: str):
+    def __init__(self,
+        board: str,
+        net: str,
+        component: str,
+        designator: int,
+        connector_name: str
+    ):
         self.board = board
         self.net = net
         self.component = component
@@ -13,11 +19,11 @@ class NetMapEntry:
 
 class NetMap:
     def __init__(self, entries: dict[board_net.BoardNet, NetMapEntry]):
-        self.entries: dict[board_net.BoardNet, NetMapEntry] = entries
+        self._entries: dict[board_net.BoardNet, NetMapEntry] = entries
 
     def get_entry(self, board: str, net: str) -> NetMapEntry:
         board_net = board_net.BoardNet(board, net)
-        return self.entries[board_net]
+        return self._entries[board_net]
 
     @classmethod
     def from_csv(cls, file_path: str) -> 'NetMap':
