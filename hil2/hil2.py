@@ -24,10 +24,13 @@ class Hil2:
 		self.dut_cons: dut_cons.DutCons = dut_cons.DutCons.from_json(test_config_path)
 		self.can_dbc: cantools.database.can.database.Database = cantools.db.load_file(os.path.join(can_dbc_path))
 
-	def set_ao(self, board: str, net: str, value: float) -> None:
+	def _map_to_hil_device_con(self, board: str, net: str) -> dut_cons.HilDutCon:
 		net_map_entry = self.net_map.get_entry(board, net)
 		dut_con = dut_cons.DutCon(net_map_entry.connector_name, net_map_entry.designator)
-		hil_device_con = self.dut_cons.get_hil_device_connection(board, dut_con)
+		return self.dut_cons.get_hil_device_connection(board, dut_con)
+
+	def set_ao(self, board: str, net: str, value: float) -> None:
+		hil_device_con = self._map_to_hil_device_con(board, net)
 
 	def hiZ_ao(self, board: str, net: str) -> None:
 		...
