@@ -1,3 +1,6 @@
+import os
+import cantools.database.can.database
+
 import component
 import net_map
 
@@ -5,7 +8,6 @@ HIGH = True
 LOW = False
 
 class Hil2:
-	# h = hil2.Hil2("config.json", "device_config.json", "netmap.csv", "can.dbc")
 	def __init__(self,
 		test_config_path: str,
 		device_config_path: str,
@@ -14,7 +16,7 @@ class Hil2:
 	):
 		...
 		self.net_map: net_map.NetMap = net_map.NetMap.from_csv(net_map_path)
-		...
+		self.can_dbc: cantools.database.can.database.Database = cantools.db.load_file(os.path.join(can_dbc_path))
 
 	def set_ao(self, board: str, net: str, value: float) -> component.AO:
 		...
