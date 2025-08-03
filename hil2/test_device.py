@@ -89,20 +89,20 @@ class TestDevice:
 		)
 	
 class TestDeviceManager:
-	def __init__(self, test_devices: list[TestDevice]):
-		self.test_devices: list[TestDevice] = test_devices
+	def __init__(self, test_devices: dict[str, TestDevice]):
+		self.test_devices: dict[str, TestDevice] = test_devices
 
 	@classmethod
 	def from_json(cls, test_config_path: str, device_config_path: str) -> 'TestDeviceManager':
 		with open(test_config_path, 'r') as test_config_file:
 			test_config = json.load(test_config_file)
 		
-		test_devices = list(map(
-			lambda device: TestDevice.from_json(
+		test_devices = dict(map(
+			lambda device: (device.get("name"), TestDevice.from_json(
 				device.get("id"),
 				device.get("name"),
 				device_config_path
-			),
+			)),
 			test_config.get("hil_devices")
 		))
 		
