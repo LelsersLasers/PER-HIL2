@@ -2,6 +2,7 @@ import os
 import cantools.database.can.database
 
 import test_device
+import dut_cons
 import component
 import net_map
 
@@ -20,8 +21,8 @@ class Hil2:
 			test_config_path,
 			device_config_path
 		)
+		self.dut_cons: dut_cons.DutCons = dut_cons.DutCons.from_json(test_config_path)
 		self.can_dbc: cantools.database.can.database.Database = cantools.db.load_file(os.path.join(can_dbc_path))
-		...
 
 	def set_ao(self, board: str, net: str, value: float) -> None:
 		net_map_entry = self.net_map.get_entry(board, net)
