@@ -67,11 +67,13 @@ class CAN:
     def __init__(
         self,
         send_fn: Callable[[str | int, dict], None],
-        get_fn: Callable[[str | int], Optional[dict]],
+        get_last_fn: Callable[[str | int], Optional[dict]],
+        get_all_fn: Callable[[Optional[str | int]], list[dict]],
         clear_fn: Callable[[str | int], None]
     ):
         self._send_fn: Callable[[str | int, dict], None] = send_fn
-        self._get_fn: Callable[[str | int], Optional[dict]] = get_fn
+        self._get_last_fn: Callable[[str | int], Optional[dict]] = get_last_fn
+        self._get_all_fn: Callable[[Optional[str | int]], list[dict]] = get_all_fn
         self._clear_fn: Callable[[str | int], None] = clear_fn
 
     def clear(self, signal: str | int = None) -> None:
@@ -80,8 +82,11 @@ class CAN:
     def send(self, signal: str | int, data: dict) -> None:
         self._send_fn(signal, data)
     
-    def get(self, signal: str | int) -> Optional[dict]:
-        return self._get_fn(signal)
+    def get_last(self, signal: str | int) -> Optional[dict]:
+        return self._get_last_fn(signal)
+    
+    def get_all(self, signal: Optional[str | int] = None) -> list[dict]:
+        return self._get_all_fn(signal)
     
     def shutdown(self) -> None:
         pass
