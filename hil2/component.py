@@ -61,6 +61,19 @@ class AI:
         pass
 
 
+class POT:
+    """Potentiometer"""
+
+    def __init__(self, set_fn: Callable[[float], None]):
+        self._set_fn: Callable[[float], None] = set_fn
+
+    def set(self, value: int) -> None:
+        self._set_fn(value)
+
+    def shutdown(self) -> None:
+        pass
+
+
 class CAN:
     """CAN Bus Interface"""
 
