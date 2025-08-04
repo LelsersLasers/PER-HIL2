@@ -28,6 +28,7 @@ class Hil2:
 
 	def set_ao(self, board: str, net: str, value: float) -> None:
 		hil_device_con = self._map_to_hil_device_con(board, net)
+		self.test_device_manager.do_action(test_device.Action.SET_AO, hil_device_con, value)
 
 	def hiZ_ao(self, board: str, net: str) -> None:
 		...

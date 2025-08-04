@@ -1,4 +1,10 @@
+from typing import Any, Optional
+
+import enum
 import json
+
+import dut_cons
+import action
 
 class AdcConfig:
 	def __init__(self, adc_config: dict):
@@ -37,11 +43,22 @@ class Mux:
 		self.select_ports: list[int] = mux.get("select_ports")
 		self.port: int = mux.get("port")
 
-	def is_name(self, name: str) -> bool:
-		name_parts = name.split('_')
+	def select_from_name(self, name: str) -> Optional['MuxSelect']:
+		"""Note: returns None when the name does not match."""
+		name_parts = name.rsplit('_', 1)
 		if len(name_parts) < 2:
-			return False
-		return name_parts[0] == self.name
+			return None
+		if name_parts[0] != self.name:
+			return None
+		try:
+			return MuxSelect(self, int(name_parts[1]))
+		except ValueError:
+			return None
+
+class MuxSelect:
+	def __init__(self, mux: Mux, select: int):
+		self.mux: Mux = mux
+		self.select: int = select
 
 class CanBus:
 	def __init__(self, can_bus: dict):
@@ -94,6 +111,32 @@ class TestDevice:
 			pot_config
 		)
 	
+	def select_mux(self, mux_select: MuxSelect) -> None:
+		for i, p in enumerate(mux_select.mux.select_ports):
+			select_bit = 1 if (mux_select.select & (1 << i)) else 0
+			self.set_do(p, select_bit)
+		self.set_ao(mux_select.mux.port, mux_select)
+	
+	def set_ao(self, pin: int, value: float) -> None:
+		...
+	
+	def do_action(self, action: action.ActionType, port: str) -> Any:
+		maybe_port = self.ports.get(port, None)
+		maybe_mux_select = next(
+			(val for m in self.muxs.values() if (val := m.select_from_name(port)) is not None),
+			None,
+		)
+		maybe_can_bus = self.can_busses.get(port, None)
+
+		match (action, maybe_port, maybe_mux_select, maybe_can_bus):
+			case (action.SetAo(value), mp, None, None) if mp is not None and mp.mode == 'AO':
+				self.set_ao(mp.port, value)
+			case (action.SetAo(value), None, mms, None) if mms is not None and mms.mux.mode == 'AO':
+				self.select_mux(mms)
+				self.set_ao(mms.mux.port, value)
+			case _:
+				raise ValueError(f"Action {type(action)} not supported for port {port} on device {self.name}")
+	
 class TestDeviceManager:
 	def __init__(self, test_devices: dict[str, TestDevice]):
 		self.test_devices: dict[str, TestDevice] = test_devices
@@ -113,3 +156,6 @@ class TestDeviceManager:
 		))
 		
 		return cls(test_devices)
+	
+	def do_action(self, action_type: action.ActionType, hil_dut_con: dut_cons.HilDutCon) -> Any:
+		return self.test_devices[hil_dut_con.device].do_action(action_type, hil_dut_con.port)
