@@ -117,7 +117,25 @@ class TestDevice:
 			self.set_do(p, select_bit)
 		self.set_ao(mux_select.mux.port, mux_select)
 	
+	def set_do(self, port: str, value: bool) -> None:
+		...
+
+	def hiZ_do(self, port: str) -> None:
+		...
+
+	def get_di(self, port: str) -> bool:
+		...
+
 	def set_ao(self, pin: int, value: float) -> None:
+		...
+	
+	def hiZ_ao(self, port: str) -> None:
+		...
+	
+	def get_ai(self, port: str) -> float:
+		...
+
+	def set_pot(self, port: str, value: int) -> None:
 		...
 	
 	def do_action(self, action: action.ActionType, port: str) -> Any:
@@ -129,11 +147,43 @@ class TestDevice:
 		maybe_can_bus = self.can_busses.get(port, None)
 
 		match (action, maybe_port, maybe_mux_select, maybe_can_bus):
+			# Set DO + direct port
+			case (action.SetDo(value), mp, None, None) if mp is not None and mp.mode == 'DO':
+				self.set_do(mp.port, value)
+			# Set DO + mux select
+			case (action.SetDo(value), None, mms, None) if mms is not None and mms.mux.mode == 'DO':
+				self.select_mux(mms)
+				self.set_do(mms.mux.port, value)
+			# HiZ DO + direct port
+			case (action.HiZDo(), mp, None, None) if mp is not None and mp.mode == 'DO':
+				self.hiZ_do(mp.port)
+			# HiZ DO + mux select
+			case (action.HiZDo(), None, mms, None) if mms is not None and mms.mux.mode == 'DO':
+				self.select_mux(mms)
+				self.hiZ_do(mms.mux.port)
+			# Get DI + direct port
+			case (action.GetDi(), mp, None, None) if mp is not None and mp.mode == 'DI':
+				return self.get_di(mp.port)
+			# Get DI + mux select
+			case (action.GetDi(), None, mms, None) if mms is not None and mms.mux.mode == 'DI':
+				self.select_mux(mms)
+				return self.get_di(mms.mux.port)
+			# Set AO + direct port
 			case (action.SetAo(value), mp, None, None) if mp is not None and mp.mode == 'AO':
 				self.set_ao(mp.port, value)
-			case (action.SetAo(value), None, mms, None) if mms is not None and mms.mux.mode == 'AO':
+			# HiZ AO + direct port
+			case (action.HiZAo(), mp, None, None) if mp is not None and mp.mode == 'AO':
+				self.hiZ_ao(mp.port)
+			# Get AI + direct port
+			case (action.GetAi(), mp, None, None) if mp is not None and mp.mode == 'AI':
+				return self.get_ai(mp.port)
+			# Get AI + mux select
+			case (action.GetAi(), None, mms, None) if mms is not None and mms.mux.mode == 'AI':
 				self.select_mux(mms)
-				self.set_ao(mms.mux.port, value)
+				return self.get_ai(mms.mux.port)
+			# Set Pot + direct port
+			case (action.SetPot(value), mp, None, None) if mp is not None and mp.mode == 'POT':
+				self.set_pot(mp.port, value)
 			case _:
 				raise ValueError(f"Action {type(action)} not supported for port {port} on device {self.name}")
 	
