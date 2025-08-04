@@ -6,9 +6,6 @@ import dut_cons
 import component
 import net_map
 
-HIGH = True
-LOW = False
-
 class Hil2:
 	def __init__(self,
 		test_config_path: str,
