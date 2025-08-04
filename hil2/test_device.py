@@ -26,8 +26,8 @@ class PotConfig:
 
 class Port:
 	def __init__(self, port: dict):
-		self.port: int = port.get("port")
 		self.name: str = port.get("name")
+		self.port: int = port.get("port")
 		self.mode: str = port.get("mode")
 
 class Mux:
@@ -39,8 +39,8 @@ class Mux:
 
 class CanBus:
 	def __init__(self, can_bus: dict):
-		self.port: int = can_bus.get("port")
 		self.name: str = can_bus.get("name")
+		self.port: int = can_bus.get("port")
 
 
 class TestDevice:
