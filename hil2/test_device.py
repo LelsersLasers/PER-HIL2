@@ -47,18 +47,18 @@ class TestDevice:
 	def __init__(self,
 		hil_id: int,
 		name: str,
-		ports: list[Port],
-		muxs: list[Mux],
-		can_busses: list[CanBus],
+		ports: dict[str, Port],
+		muxs: dict[str, Mux],
+		can_busses: dict[str, CanBus],
 		adc_config: AdcConfig,
 		dac_config: DacConfig,
 		pot_config: PotConfig
 	):
 		self.hil_id: int = hil_id
 		self.name: str = name
-		self.ports: list[Port] = ports
-		self.muxs: list[Mux] = muxs
-		self.can_busses: list[CanBus] = can_busses
+		self.ports: dict[str, Port] = ports
+		self.muxs: dict[str, Mux] = muxs
+		self.can_busses: dict[str, CanBus] = can_busses
 		self.adc_config: AdcConfig = adc_config
 		self.dac_config: DacConfig = dac_config
 		self.pot_config: PotConfig = pot_config
@@ -69,9 +69,9 @@ class TestDevice:
 		with open(device_config_path, 'r') as device_config_path:
 			device_config = json.load(device_config_path)
 
-		muxs = list(map(Mux, device_config.get("muxs")))
-		ports = list(map(Port, device_config.get("ports")))
-		can_busses = list(map(CanBus, device_config.get("can")))
+		ports = dict(map(lambda p: (p.get("name"), Port(p)), device_config.get("ports")))
+		muxs = dict(map(lambda m: (m.get("name"), Mux(m)), device_config.get("muxs")))
+		can_busses = dict(map(lambda c: (c.get("name"), CanBus(c)), device_config.get("can")))
 		
 		adc_config = AdcConfig(device_config.get("adc_config"))
 		dac_config = DacConfig(device_config.get("dac_config"))
