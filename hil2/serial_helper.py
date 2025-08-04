@@ -3,6 +3,8 @@ import time
 import serial
 import serial.tools.list_ports
 
+import commands
+
 
 def discover_devices(hil_ids: list[int]) -> dict[int, serial.Serial]:
 	devices = {}
@@ -29,16 +31,11 @@ def discover_devices(hil_ids: list[int]) -> dict[int, serial.Serial]:
 		serial_con.setDTR(True)
 		
 		for _ in range(5):
-			# 4 = HIL_CMD_READ_ID
-			serial_con.write(b'\x04')
-			read_hil_id_raw = serial_con.read(1)
-			
-			if len(read_hil_id_raw) == 1:
-				read_hil_id = int.from_bytes(read_hil_id_raw, "big")
-				if read_hil_id in hil_ids:
-					devices[read_hil_id] = serial_con
-					print(f"Discovered HIL device with ID {read_hil_id} on port {cp}")
-					break
+			read_hil_id = commands.read_id(serial_con)
+			if read_hil_id is not None and read_hil_id in hil_ids:
+				devices[read_hil_id] = serial_con
+				print(f"Discovered HIL device with ID {read_hil_id} on port {cp}")
+				break
 			time.sleep(1)
 		else:
 			serial_con.close()
