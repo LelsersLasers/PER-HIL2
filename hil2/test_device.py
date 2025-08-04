@@ -1,10 +1,15 @@
 from typing import Any, Optional
 
-import enum
 import json
+import time
+
+import serial
+import serial.tools.list_ports
 
 import dut_cons
 import action
+import serial_manager
+
 
 class AdcConfig:
 	def __init__(self, adc_config: dict):
@@ -75,7 +80,8 @@ class TestDevice:
 		can_busses: dict[str, CanBus],
 		adc_config: AdcConfig,
 		dac_config: DacConfig,
-		pot_config: PotConfig
+		pot_config: PotConfig,
+		serial_con: serial.Serial
 	):
 		self.hil_id: int = hil_id
 		self.name: str = name
@@ -85,10 +91,16 @@ class TestDevice:
 		self.adc_config: AdcConfig = adc_config
 		self.dac_config: DacConfig = dac_config
 		self.pot_config: PotConfig = pot_config
-
+		self.serial_con: serial.Serial = serial_con
 
 	@classmethod
-	def from_json(cls, hil_id: int, name: str, device_config_path: str):
+	def from_json(
+		cls,
+		hil_id: int,
+		name: str,
+		serial_con: serial.Serial,
+		device_config_path: str
+	):
 		with open(device_config_path, 'r') as device_config_path:
 			device_config = json.load(device_config_path)
 
@@ -108,8 +120,13 @@ class TestDevice:
 			can_busses,
 			adc_config,
 			dac_config,
-			pot_config
+			pot_config,
+			serial_con
 		)
+	
+	def close(self) -> None:
+		# TODO: close all ports
+		self.serial_con.close()
 	
 	def select_mux(self, mux_select: MuxSelect) -> None:
 		for i, p in enumerate(mux_select.mux.select_ports):
@@ -195,11 +212,18 @@ class TestDeviceManager:
 	def from_json(cls, test_config_path: str, device_config_path: str) -> 'TestDeviceManager':
 		with open(test_config_path, 'r') as test_config_file:
 			test_config = json.load(test_config_file)
+
+		hil_ids = list(map(
+			lambda device: device.get("id"),
+			test_config.get("hil_devices")
+		))
+		sm = serial_manager.SerialManager(hil_ids)
 		
 		test_devices = dict(map(
 			lambda device: (device.get("name"), TestDevice.from_json(
 				device.get("id"),
 				device.get("name"),
+				sm.get(device.get("id")),
 				device_config_path
 			)),
 			test_config.get("hil_devices")
@@ -209,3 +233,7 @@ class TestDeviceManager:
 	
 	def do_action(self, action_type: action.ActionType, hil_dut_con: dut_cons.HilDutCon) -> Any:
 		return self.test_devices[hil_dut_con.device].do_action(action_type, hil_dut_con.port)
+	
+	def close(self) -> None:
+		for device in self.test_devices.values():
+			device.close()
