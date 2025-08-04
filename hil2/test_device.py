@@ -8,6 +8,7 @@ import serial.tools.list_ports
 
 import dut_cons
 import action
+import commands
 import serial_helper
 
 
@@ -134,26 +135,33 @@ class TestDevice:
 			self.set_do(p, select_bit)
 		self.set_ao(mux_select.mux.port, mux_select)
 	
-	def set_do(self, port: str, value: bool) -> None:
-		...
+	def set_do(self, pin: int, value: bool) -> None:
+		commands.write_gpio(self.serial_con, pin, value)
 
-	def hiZ_do(self, port: str) -> None:
-		...
+	def hiZ_do(self, pin: int) -> None:
+		commands.read_gpio(self.serial_con, pin)
 
-	def get_di(self, port: str) -> bool:
-		...
+	def get_di(self, pin: int) -> bool:
+		return commands.read_gpio(self.serial_con, pin)
 
 	def set_ao(self, pin: int, value: float) -> None:
-		...
+		raw_value = self.dac_config.v_to_raw(value)
+		commands.write_dac(self.serial_con, pin, raw_value)
 	
-	def hiZ_ao(self, port: str) -> None:
-		...
+	def hiZ_ao(self, pin: int) -> None:
+		commands.hiZ_dac(self.serial_con, pin)
 	
-	def get_ai(self, port: str) -> float:
-		...
+	def get_ai(self, pin: int, mode: str) -> float:
+		raw_value = commands.read_adc(self.serial_con, pin)
+		if mode == 'AI5':
+			return self.adc_config.raw_to_5v(raw_value)
+		elif mode == 'AI24':
+			return self.adc_config.raw_to_24v(raw_value)
+		else:
+			raise ValueError(f"Unsupported AI mode: {mode}")
 
-	def set_pot(self, port: str, value: int) -> None:
-		...
+	def set_pot(self, pin: int, value: int) -> None:
+		commands.write_pot(self.serial_con, pin, value)	
 	
 	def do_action(self, action: action.ActionType, port: str) -> Any:
 		maybe_port = self.ports.get(port, None)
@@ -192,12 +200,12 @@ class TestDevice:
 			case (action.HiZAo(), mp, None, None) if mp is not None and mp.mode == 'AO':
 				self.hiZ_ao(mp.port)
 			# Get AI + direct port
-			case (action.GetAi(), mp, None, None) if mp is not None and mp.mode == 'AI':
-				return self.get_ai(mp.port)
+			case (action.GetAi(), mp, None, None) if mp is not None and mp.mode.startswith('AI'):
+				return self.get_ai(mp.port, mms.mux.mode)
 			# Get AI + mux select
-			case (action.GetAi(), None, mms, None) if mms is not None and mms.mux.mode == 'AI':
+			case (action.GetAi(), None, mms, None) if mms is not None and mms.mux.mode.startswith('AI'):
 				self.select_mux(mms)
-				return self.get_ai(mms.mux.port)
+				return self.get_ai(mms.mux.port, mms.mux.mode)
 			# Set Pot + direct port
 			case (action.SetPot(value), mp, None, None) if mp is not None and mp.mode == 'POT':
 				self.set_pot(mp.port, value)
