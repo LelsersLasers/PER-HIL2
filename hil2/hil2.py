@@ -2,6 +2,7 @@ import os
 import cantools.database.can.database
 
 import test_device
+import action
 import dut_cons
 import component
 import net_map
@@ -27,8 +28,10 @@ class Hil2:
 		return self.dut_cons.get_hil_device_connection(board, dut_con)
 
 	def set_ao(self, board: str, net: str, value: float) -> None:
-		hil_device_con = self._map_to_hil_device_con(board, net)
-		self.test_device_manager.do_action(test_device.Action.SET_AO, hil_device_con, value)
+		self.test_device_manager.do_action(
+			action.SetAo(value),
+			self._map_to_hil_device_con(board, net)
+		)
 
 	def hiZ_ao(self, board: str, net: str) -> None:
 		...
