@@ -8,7 +8,7 @@ import serial.tools.list_ports
 
 import dut_cons
 import action
-import serial_manager
+import serial_helper
 
 
 class AdcConfig:
@@ -217,13 +217,13 @@ class TestDeviceManager:
 			lambda device: device.get("id"),
 			test_config.get("hil_devices")
 		))
-		sm = serial_manager.SerialManager(hil_ids)
+		hil_devices = serial_helper.discover_devices(hil_ids)
 		
 		test_devices = dict(map(
 			lambda device: (device.get("name"), TestDevice.from_json(
 				device.get("id"),
 				device.get("name"),
-				sm.get(device.get("id")),
+				hil_devices[device.get("id")],
 				device_config_path
 			)),
 			test_config.get("hil_devices")
