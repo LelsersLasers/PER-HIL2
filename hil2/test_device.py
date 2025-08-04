@@ -19,6 +19,7 @@ class AdcConfig:
 		self.five_v_reference_v: float = adc_config.get("5v_reference_v")
 		self.twenty_four_v_reference_v: float = adc_config.get("24v_reference_v")
 
+	# TODO
 	def raw_to_5v(self, raw_value: int) -> float:
 		...
 	def raw_to_24v(self, raw_value: int) -> float:
