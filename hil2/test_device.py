@@ -37,6 +37,12 @@ class Mux:
 		self.select_ports: list[int] = mux.get("select_ports")
 		self.port: int = mux.get("port")
 
+	def is_name(self, name: str) -> bool:
+		name_parts = name.split('_')
+		if len(name_parts) < 2:
+			return False
+		return name_parts[0] == self.name
+
 class CanBus:
 	def __init__(self, can_bus: dict):
 		self.name: str = can_bus.get("name")
