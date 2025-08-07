@@ -29,7 +29,7 @@ def read_gpio(serial_con: serial.Serial, pin: int) -> bool:
 	serial_con.write(bytearray(command))
 	read_value_raw = serial_con.read(1)
 	if len(read_value_raw) != 1:
-		return False
+		raise ValueError("Failed to read GPIO value, expected 1 byte")
 	return bool(int.from_bytes(read_value_raw, "big"))
 
 def write_dac(serial_con: serial.Serial, pin: int, raw_value: int) -> None:
