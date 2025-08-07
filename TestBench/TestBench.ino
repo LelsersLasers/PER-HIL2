@@ -1,76 +1,53 @@
-#include <FlexCAN_T4.h>
 #include <Arduino.h>
 #include <Wire.h>
+#include <FlexCAN_T4.h>
+
+#include "Adafruit_MCP4706.h"
+#include "SW_MCP4017.h"
 
 
 #define SERIAL_BAUDRATE 115200
 const int TESTER_ID = 1;
 
 
-// #define STM32
-#ifdef STM32
-	#define SERIAL_CON SerialUSB
-	#define HAL_DAC_MODULE_ENABLED 1
-#else
-	#define SERIAL_CON Serial
-#endif
+#define SERIAL_CON Serial
 
 
-#define DAC_EN
-#define DIGIPOT_EN
-#define CAN_EN
+#define NUM_DACS 8
+#define DAC_WIRE Wire
+#define DAC_SDA 17
+#define DAC_SCL 24
+#define DAC_BASE_ADDR 0x60
+
+#define DIGIPOT_1_WIRE Wire1
+#define DIGIPOT_1_SDA 25
+#define DIGIPOT_1_SCL 16
+
+#define DIGIPOT_2_WIRE Wire2
+#define DIGIPOT_2_SDA 18
+#define DIGIPOT_2_SCL 19
+
+#define CAN_BAUDRATE 500000
+#define CAN_RX RX_SIZE_256
+#define CAN_TX TX_SIZE_16
+
+#define CAN_RESPONSE_NO_MESSAGE 0x01
+#define CAN_RESPONSE_FOUND      0x02
+#define CAN_IGNORE_ID           0xFF
+
+const uint8_t DIGIPOT_MAX_STEPS = 128;
+const float DIGIPOT_MAX_OHMS = 10000;
 
 
-#ifdef STM32
-	#ifdef DAC_EN
-		#warning "Can't have both DAC_EN and STM32 enabled"
-	#endif
-#endif
+Adafruit_MCP4706 dacs[NUM_DACS];
+bool dac_power_down[NUM_DACS];
 
-#ifdef DAC_EN
-	#include "Adafruit_MCP4706.h"
-	
-	#define NUM_DACS 8
-	#define DAC_WIRE Wire
-	#define DAC_SDA 17
-	#define DAC_SCL 24
+MCP4017 digipot1(DIGIPOT_MAX_STEPS, DIGIPOT_MAX_OHMS);
+MCP4017 digipot2(DIGIPOT_MAX_STEPS, DIGIPOT_MAX_OHMS);
 
-	Adafruit_MCP4706 dacs[NUM_DACS];
-	bool dac_power_down[NUM_DACS];
-#endif
 
-#ifdef DIGIPOT_EN
-	#include "SW_MCP4017.h"
-	
-	#define DIGIPOT_1_WIRE Wire1
-	#define DIGIPOT_1_SDA 25
-	#define DIGIPOT_1_SCL 16
-
-	#define DIGIPOT_2_WIRE Wire2
-	#define DIGIPOT_2_SDA 18
-	#define DIGIPOT_2_SCL 19
-
-	const uint8_t DIGIPOT_MAX_STEPS = 128;
-	const float DIGIPOT_MAX_OHMS = 10000;
-
-	MCP4017 digipot1(DIGIPOT_MAX_STEPS, DIGIPOT_MAX_OHMS);
-	MCP4017 digipot2(DIGIPOT_MAX_STEPS, DIGIPOT_MAX_OHMS);
-#endif
-
-#ifdef CAN_EN
-	#include <FlexCAN_T4.h>
-
-	#define CAN_BAUDRATE 500000
-	#define CAN_RX RX_SIZE_256
-	#define CAN_TX TX_SIZE_16
-
-	#define CAN_RESPONSE_NO_MESSAGE 0x01
-	#define CAN_RESPONSE_FOUND      0x02
-	#define CAN_IGNORE_ID           0xFF
-
-	FlexCAN_T4<CAN1, CAN_RX, CAN_TX> vCan; // id: 1
-	FlexCAN_T4<CAN3, CAN_RX, CAN_TX> mCan; // id: 2
-#endif
+FlexCAN_T4<CAN1, CAN_RX, CAN_TX> vCan; // id: 1
+FlexCAN_T4<CAN3, CAN_RX, CAN_TX> mCan; // id: 2
 
 
 enum GpioCommand {
@@ -104,38 +81,32 @@ bool data_ready = false;
 void setup() {
 	SERIAL_CON.begin(SERIAL_BAUDRATE);
 
-	#ifdef DAC_EN
-		DAC_WIRE.setSDA(DAC_SDA);
-		DAC_WIRE.setSCL(DAC_SCL);
+	DAC_WIRE.setSDA(DAC_SDA);
+	DAC_WIRE.setSCL(DAC_SCL);
 
-		for (int i = 0; i < NUM_DACS; i++) {
-			uint8_t addr = 0x60 + i;
-			dacs[i].begin(addr, DAC_WIRE);
+	for (int i = 0; i < NUM_DACS; i++) {
+		uint8_t addr = DAC_BASE_ADDR + i;
+		dacs[i].begin(addr, DAC_WIRE);
 
-			dacs[i].setMode(MCP4706_PWRDN_500K);
-			dac_power_down[i] = true; // start with power down
-		}
-	#endif
+		dacs[i].setMode(MCP4706_PWRDN_500K);
+		dac_power_down[i] = true; // start with power down
+	}
 
-	#ifdef DIGIPOT_EN
-		DIGIPOT_1_WIRE.setSDA(DIGIPOT_1_SDA);
-		DIGIPOT_1_WIRE.setSCL(DIGIPOT_1_SCL);
-		digipot1.begin(MCP4017ADDRESS, DIGIPOT_1_WIRE);
+	DIGIPOT_1_WIRE.setSDA(DIGIPOT_1_SDA);
+	DIGIPOT_1_WIRE.setSCL(DIGIPOT_1_SCL);
+	digipot1.begin(MCP4017ADDRESS, DIGIPOT_1_WIRE);
 
-		DIGIPOT_2_WIRE.setSDA(DIGIPOT_2_SDA);
-		DIGIPOT_2_WIRE.setSCL(DIGIPOT_2_SCL);
-		digipot2.begin(MCP4017ADDRESS, DIGIPOT_2_WIRE);
-	#endif
+	DIGIPOT_2_WIRE.setSDA(DIGIPOT_2_SDA);
+	DIGIPOT_2_WIRE.setSCL(DIGIPOT_2_SCL);
+	digipot2.begin(MCP4017ADDRESS, DIGIPOT_2_WIRE);
 
-	#ifdef CAN_EN
-		vCan.begin();
-		vCan.setBaudRate(CAN_BAUDRATE);
-		vCan.enableFIFO();
+	vCan.begin();
+	vCan.setBaudRate(CAN_BAUDRATE);
+	vCan.enableFIFO();
 
-		mCan.begin();
-		mCan.setBaudRate(CAN_BAUDRATE);
-		mCan.enableFIFO();
-	#endif
+	mCan.begin();
+	mCan.setBaudRate(CAN_BAUDRATE);
+	mCan.enableFIFO();
 }
 
 void error(String error_string) {
@@ -167,15 +138,12 @@ void loop() {
 		}
 		case GpioCommand::READ_GPIO: {
 			int pin = data[1];
-			#ifdef DAC_EN
 				if (pin >= 200 && pin < 200 + NUM_DACS) {
 					int dac_idx = pin - 200;
 					dacs[dac_idx].setMode(MCP4706_PWRDN_500K);
 					dac_power_down[dac_idx] = true;
 					SERIAL_CON.write(0x01);
-				} else
-			#endif
-				{
+				} else {
 					pinMode(pin, INPUT);
 					int val = digitalRead(pin);
 					SERIAL_CON.write(val & 0xFF);
@@ -185,7 +153,6 @@ void loop() {
 		case GpioCommand::WRITE_DAC: {
 			int pin = data[1];
 			uint8_t value = data[2];
-			#ifdef DAC_EN
 				int dac_idx = pin - 200;
 				if (dac_idx >= 0 && dac_idx < NUM_DACS) {
 					if (dac_power_down[dac_idx]) {
@@ -194,12 +161,6 @@ void loop() {
 					}
 					dacs[dac_idx].setVoltage(value);
 				}
-			#endif
-			#ifdef STM32
-				// 4 and 5 have DACs on f407
-				pinMode(pin, OUTPUT);
-				analogWrite(pin, value & 0xFF); // max val 255
-			#endif
 
 			break;
 		}
@@ -217,75 +178,63 @@ void loop() {
 		case GpioCommand::WRITE_POT: {
 			int pin = data[1];
 			uint8_t value = data[2];
-			#ifdef DIGIPOT_EN
 				if (pin == 1) {
 					digipot1.setSteps(value);
 				} else if (pin == 2) {
 					digipot2.setSteps(value); 
-				} else
-			#endif
-				{
+				} else {
 					error("POT PIN COUNT EXCEEDED");
 				}
-			break;
 		}
 		case GpioCommand::READ_CAN: {
 			int bus = data[1];
 			uint8_t ignore_id = data[2];
 			uint32_t id = (data[3] << 8) | data[4]; // 11-bit ID
-			#ifdef CAN_EN
-				CAN_message_t msg = { 0 };
-				bool found = false;
+			CAN_message_t msg = { 0 };
+			bool found = false;
 
-				if (bus == 1) {
-					while (vCan.read(msg)) {
-						if (msg.id == id || ignore_id == CAN_IGNORE_ID) { found = true; break; }
-					}
-				} else if (bus == 2) {
-					while (mCan.read(msg)) {
-						if (msg.id == id || ignore_id == CAN_IGNORE_ID) { found = true; break; }
-					}
-				} else {
-					error("CAN BUS NOT SUPPORTED");
+			if (bus == 1) {
+				while (vCan.read(msg)) {
+					if (msg.id == id || ignore_id == CAN_IGNORE_ID) { found = true; break; }
 				}
+			} else if (bus == 2) {
+				while (mCan.read(msg)) {
+					if (msg.id == id || ignore_id == CAN_IGNORE_ID) { found = true; break; }
+				}
+			} else {
+				error("CAN BUS NOT SUPPORTED");
+			}
 
-				if (found) {
-					SERIAL_CON.write(CAN_RESPONSE_FOUND);
-					SERIAL_CON.write((uint8_t *)&msg.id, 4);
-					SERIAL_CON.write(msg.len);
-					SERIAL_CON.write(msg.buf, 8);
-				} else {
-					SERIAL_CON.write(CAN_RESPONSE_NO_MESSAGE);
-				}
-			#else
-				error("CAN NOT ENABLED");
-			#endif
+			if (found) {
+				SERIAL_CON.write(CAN_RESPONSE_FOUND);
+				SERIAL_CON.write((uint8_t *)&msg.id, 4);
+				SERIAL_CON.write(msg.len);
+				SERIAL_CON.write(msg.buf, 8);
+			} else {
+				SERIAL_CON.write(CAN_RESPONSE_NO_MESSAGE);
+			}
 			break;
 		}
 		case GpioCommand::WRITE_CAN: {
 			int bus = data[1];
-			#ifdef CAN_EN
-				CAN_message_t msg = { 0 };
-				msg.id = (data[2] << 8) | data[3]; // 11-bit ID
-				msg.len = data[4];
-				memcpy(msg.buf, &data[5], msg.len);
+			CAN_message_t msg = { 0 };
+			msg.id = (data[2] << 8) | data[3]; // 11-bit ID
+			msg.len = data[4];
+			memcpy(msg.buf, &data[5], msg.len);
 
-				msg.len = 8;
-				msg.edl = 0;
-				msg.brs = 0;
-				msg.esi = 0;
-				msg.flags.extended = false; 
+			msg.len = 8;
+			msg.edl = 0;
+			msg.brs = 0;
+			msg.esi = 0;
+			msg.flags.extended = false; 
 
-				if (bus == 1) {
-					vCan.write(msg);
-				} else if (bus == 2) {
-					mCan.write(msg);
-				} else {
-					error("CAN BUS NOT SUPPORTED");
-				}
-			#else
-				error("CAN NOT ENABLED");
-			#endif
+			if (bus == 1) {
+				vCan.write(msg);
+			} else if (bus == 2) {
+				mCan.write(msg);
+			} else {
+				error("CAN BUS NOT SUPPORTED");
+			}
 			break;
 		}
 	} else {
