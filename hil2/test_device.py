@@ -163,7 +163,7 @@ class TestDevice:
 
 	def set_pot(self, pin: int, value: int) -> None:
 		commands.write_pot(self.serial_con, pin, value)	
-	
+
 	def do_action(self, action: action.ActionType, port: str) -> Any:
 		maybe_port = self.ports.get(port, None)
 		maybe_mux_select = next(
@@ -240,6 +240,12 @@ class TestDeviceManager:
 		
 		return cls(test_devices)
 	
+	def maybe_hil_con_from_net(self, board: str, net: str) -> Optional[dut_cons.HilDutCon]:
+		if board in self.test_devices:
+			return dut_cons.HilDutCon(board, net)
+		else:
+			return None
+
 	def do_action(self, action_type: action.ActionType, hil_dut_con: dut_cons.HilDutCon) -> Any:
 		return self.test_devices[hil_dut_con.device].do_action(action_type, hil_dut_con.port)
 	

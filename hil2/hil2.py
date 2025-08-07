@@ -28,10 +28,17 @@ class Hil2:
 		return self.dut_cons.get_hil_device_connection(board, dut_con)
 
 	def set_ao(self, board: str, net: str, value: float) -> None:
-		self.test_device_manager.do_action(
-			action.SetAo(value),
-			self._map_to_hil_device_con(board, net)
-		)
+		match (self.test_device_manager.maybe_hil_con_from_net(board, net)):
+			case None:
+				self.test_device_manager.do_action(
+					action.SetAo(value),
+					self._map_to_hil_device_con(board, net)
+				)
+			case hil_dut_con:
+				self.test_device_manager.do_action(
+					action.SetAo(value),
+					hil_dut_con
+				)
 
 	def hiZ_ao(self, board: str, net: str) -> None:
 		...
