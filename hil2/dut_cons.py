@@ -1,9 +1,13 @@
 import json
 
 class HilDutCon:
-	def __init__(self, hil_dut_con: dict):
-		self.device: str = hil_dut_con.get("device")
-		self.port: str = hil_dut_con.get("port")
+	def __init__(self, device: str, port: str):
+		self.device: str = device
+		self.port: str = port
+
+	@classmethod
+	def from_json(cls, hil_dut_con: dict) -> 'HilDutCon':
+		return cls(hil_dut_con.get("device"), hil_dut_con.get("port"))
 
 class DutCon:
 	def __init__(self, connector: str, pin: int):
@@ -17,7 +21,7 @@ class DutCon:
 class DutBoardCons:
 	def __init__(self, harness_connections: list[dict]):
 		self.harness_connections: dict[DutCon, HilDutCon] = dict(map(
-			lambda con: (DutCon.from_json(con.get("dut")), HilDutCon(con.get("hil"))),
+			lambda con: (DutCon.from_json(con.get("dut")), HilDutCon.from_json(con.get("hil"))),
 			harness_connections
 		))
 
