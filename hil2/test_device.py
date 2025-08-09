@@ -94,8 +94,8 @@ class TestDevice:
 		self.pot_config: PotConfig = pot_config
 		self.serial_con: serial.Serial = serial_con
 
-		self.device_can_busses: dict[str, can_helper.DeviceCanBus] = dict(map(
-			lambda c: (c.name, can_helper.DeviceCanBus()),
+		self.device_can_busses: dict[str, can_helper.CanMessageManager] = dict(map(
+			lambda c: (c.name, can_helper.CanMessageManager()),
 			self.can_busses.values()
 		))
 

@@ -6,13 +6,10 @@ class CanMessage:
 		self.signal: str | int = signal
 		self.data: dict = data
 
-class DeviceCanBus:
+class CanMessageManager:
 	def __init__(self):
 		self.messages: list[CanMessage] = []
 
-	# def send(self, signal: str | int, data: dict) -> None:
-	# 	...
-	
 	def get_last(self, signal: Optional[str | int]) -> Optional[dict]:
 		if signal is None:
 			return self.messages[-1] if self.messages else None
