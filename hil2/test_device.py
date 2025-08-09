@@ -72,6 +72,36 @@ class CanBus:
 		self.name: str = can_bus.get("name")
 		self.port: int = can_bus.get("port")
 
+		self.messages: list[CanMessage] = []
+
+	def send(self, signal: str | int, data: dict) -> None:
+		...
+	
+	def get_last(self, signal: Optional[str | int]) -> Optional[dict]:
+		if signal is None:
+			return self.messages[-1] if self.messages else None
+		return next(
+			filter(lambda msg: msg.signal == signal, reversed(self.messages)),
+			None
+		)
+	
+	def get_all(self, signal: Optional[str | int] = None) -> list[dict]:
+		return list(filter(
+			lambda msg: msg.signal == signal,
+			self.messages
+		))
+	
+	def clear(self, signal: Optional[str | int] = None) -> None:
+		if signal is None:
+			self.messages.clear()
+		else:
+			self.messages = list(filter(lambda msg: msg.signal != signal, self.messages))
+
+class CanMessage:
+	def __init__(self, signal: str | int, data: dict):
+		self.signal: str | int = signal
+		self.data: dict = data
+
 
 class TestDevice:
 	def __init__(self,
@@ -164,7 +194,7 @@ class TestDevice:
 	def set_pot(self, pin: int, value: int) -> None:
 		commands.write_pot(self.serial_con, pin, value)	
 
-	def do_action(self, action: action.ActionType, port: str) -> Any:
+	def do_action(self, action_type: action.ActionType, port: str) -> Any:
 		maybe_port = self.ports.get(port, None)
 		maybe_mux_select = next(
 			(val for m in self.muxs.values() if (val := m.select_from_name(port)) is not None),
@@ -172,7 +202,7 @@ class TestDevice:
 		)
 		maybe_can_bus = self.can_busses.get(port, None)
 
-		match (action, maybe_port, maybe_mux_select, maybe_can_bus):
+		match (action_type, maybe_port, maybe_mux_select, maybe_can_bus):
 			# Set DO + direct port
 			case (action.SetDo(value), mp, _, _) if mp is not None and mp.mode == 'DO':
 				self.set_do(mp.port, value)
@@ -210,6 +240,16 @@ class TestDevice:
 			# Set Pot + direct port
 			case (action.SetPot(value), mp, _, _) if mp is not None and mp.mode == 'POT':
 				self.set_pot(mp.port, value)
+			# Get last CAN msg + can bus name
+			case (action.GetLastCan(signal), _, _, mcb) if mcb is not None:
+				return mcb.get_last(signal)
+			# Get all CAN msgs + can bus name
+			case (action.GetAllCan(signal), _, _, mcb) if mcb is not None:
+				return mcb.get_all(signal)
+			# Clear CAN msgs + can bus name
+			case (action.ClearCan(signal), _, _, mcb) if mcb is not None:
+				mcb.clear(signal)
+			# Unsupported action
 			case _:
 				raise ValueError(f"Action {type(action)} not supported for port {port} on device {self.name}")
 	

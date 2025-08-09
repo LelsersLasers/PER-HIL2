@@ -1,3 +1,4 @@
+from typing import Optional
 import os
 import cantools.database.can.database
 
@@ -42,4 +43,10 @@ class Hil2:
 		return component.AO(
 			set_fn=lambda value: self.set_ao(board, net, value),
 			hiZ_fn=lambda: self.hiZ_ao(board, net)
+		)
+	
+	def get_last_can(self, hil_board: str, can_bus: str, signal: Optional[str | int]) -> Optional[dict]:
+		return self.test_device_manager.do_action(
+			action.GetLastCan(signal),
+			self._map_to_hil_device_con(hil_board, can_bus)
 		)

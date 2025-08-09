@@ -11,7 +11,7 @@ ActionType = Union[
 	'HiZAo',
 	'GetAi',
 	'SetPot',
-	# 'CanClear',
+	'GetLastCan'
 ]
 
 class SetDo:
@@ -45,8 +45,18 @@ class SetPot:
 	def __init__(self, value: int):
 		self.value: int = value
 
-# class CanClear:
-# 	__match_args__ = ("signal",)
-# 	def __init__(self, signal: Optional[str | int]):
-# 		self.signal: Optional[str | int] = signal
+class GetLastCan:
+	__match_args__ = ("signal",)
+	def __init__(self, signal: Optional[str | int]):
+		self.signal: Optional[str | int] = signal
+
+class GetAllCan:
+	__match_args__ = ("signal",)
+	def __init__(self, signal: Optional[str | int]):
+		self.signal: Optional[str | int] = signal
+
+class ClearCan:
+	__match_args__ = ("signal",)
+	def __init__(self, signal: Optional[str | int]):
+		self.signal: Optional[str | int] = signal
 

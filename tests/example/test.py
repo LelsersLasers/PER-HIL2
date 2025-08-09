@@ -13,6 +13,8 @@ def main(h):
 
 	h.set_ao("Main_Module", "VBatt", 3.2)
 	val = h.get_ao("Main_Module", "VBatt")
+
+	h.get_last_can("HIL2", "MCAN", "Signal")
 	
 
 	mcan = h.can("HIL2", "MCAN")
