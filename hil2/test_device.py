@@ -1,11 +1,10 @@
 from typing import Any, Optional
 
 import json
-import time
 
 import serial
-import serial.tools.list_ports
 
+import can_helper
 import dut_cons
 import action
 import commands
@@ -72,36 +71,6 @@ class CanBus:
 		self.name: str = can_bus.get("name")
 		self.port: int = can_bus.get("port")
 
-		self.messages: list[CanMessage] = []
-
-	def send(self, signal: str | int, data: dict) -> None:
-		...
-	
-	def get_last(self, signal: Optional[str | int]) -> Optional[dict]:
-		if signal is None:
-			return self.messages[-1] if self.messages else None
-		return next(
-			filter(lambda msg: msg.signal == signal, reversed(self.messages)),
-			None
-		)
-	
-	def get_all(self, signal: Optional[str | int] = None) -> list[dict]:
-		return list(filter(
-			lambda msg: msg.signal == signal,
-			self.messages
-		))
-	
-	def clear(self, signal: Optional[str | int] = None) -> None:
-		if signal is None:
-			self.messages.clear()
-		else:
-			self.messages = list(filter(lambda msg: msg.signal != signal, self.messages))
-
-class CanMessage:
-	def __init__(self, signal: str | int, data: dict):
-		self.signal: str | int = signal
-		self.data: dict = data
-
 
 class TestDevice:
 	def __init__(self,
@@ -124,6 +93,12 @@ class TestDevice:
 		self.dac_config: DacConfig = dac_config
 		self.pot_config: PotConfig = pot_config
 		self.serial_con: serial.Serial = serial_con
+
+		self.device_can_busses: dict[str, can_helper.DeviceCanBus] = dict(map(
+			lambda c: (c.name, can_helper.DeviceCanBus()),
+			self.can_busses.values()
+		))
+
 
 	@classmethod
 	def from_json(
@@ -242,13 +217,13 @@ class TestDevice:
 				self.set_pot(mp.port, value)
 			# Get last CAN msg + can bus name
 			case (action.GetLastCan(signal), _, _, mcb) if mcb is not None:
-				return mcb.get_last(signal)
+				return self.device_can_busses[mcb.name].get_last(signal)
 			# Get all CAN msgs + can bus name
 			case (action.GetAllCan(signal), _, _, mcb) if mcb is not None:
-				return mcb.get_all(signal)
+				return self.device_can_busses[mcb.name].get_all(signal)
 			# Clear CAN msgs + can bus name
 			case (action.ClearCan(signal), _, _, mcb) if mcb is not None:
-				mcb.clear(signal)
+				self.device_can_busses[mcb.name].clear(signal)
 			# Unsupported action
 			case _:
 				raise ValueError(f"Action {type(action)} not supported for port {port} on device {self.name}")
