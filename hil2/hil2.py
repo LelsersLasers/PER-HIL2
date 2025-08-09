@@ -23,14 +23,17 @@ class Hil2:
 		self.can_dbc: cantools.database.can.database.Database = cantools.db.load_file(os.path.join(can_dbc_path))
 
 	def _map_to_hil_device_con(self, board: str, net: str) -> dut_cons.HilDutCon:
-		net_map_entry = self.net_map.get_entry(board, net)
-		dut_con = dut_cons.DutCon(net_map_entry.connector_name, net_map_entry.designator)
-		return self.dut_cons.get_hil_device_connection(board, dut_con)
+		maybe_hil_dut_con = self.test_device_manager.maybe_hil_con_from_net(board, net)
+		match maybe_hil_dut_con:
+			case None:
+				net_map_entry = self.net_map.get_entry(board, net)
+				dut_con = dut_cons.DutCon(net_map_entry.connector_name, net_map_entry.designator)
+				return self.dut_cons.get_hil_device_connection(board, dut_con)
+			case hil_dut_con:
+				return hil_dut_con
 
 	def set_ao(self, board: str, net: str, value: float) -> None:
-		hil_dut_con = self.test_device_manager.maybe_hil_con_from_net(board, net)
-		con = hil_dut_con or self._map_to_hil_device_con(board, net)
-		self.test_device_manager.do_action(action.SetAo(value), con)
+		self.test_device_manager.do_action(action.SetAo(value), self._map_to_hil_device_con(board, net))
 
 	def hiZ_ao(self, board: str, net: str) -> None:
 		...
