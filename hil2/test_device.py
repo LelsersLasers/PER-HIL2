@@ -3,7 +3,7 @@ from typing import Any, Optional
 import json
 import threading
 
-import cantools.database.can.database
+import cantools.database.can.database as cantools_db
 
 import can_helper
 import dut_cons
@@ -182,12 +182,12 @@ class TestDevice:
 		raw_value = self.pot_config.ohms_to_raw(value)
 		commands.write_pot(self.ser, pin, raw_value)
 
-	def update_can_messages(self, bus: int, can_dbc: cantools.database.can.database.Database) -> None:
+	def update_can_messages(self, bus: int, can_dbc: cantools_db.Database) -> None:
 		self.device_can_busses[bus].add_multiple(
 			commands.parse_can_messages(self.ser, bus, can_dbc)
 		)
 
-	def send_can(self, bus: int, signal: str | int, data: dict, can_dbc: cantools.database.can.database.Database) -> None:
+	def send_can(self, bus: int, signal: str | int, data: dict, can_dbc: cantools_db.Database) -> None:
 		raw_data = list(can_dbc.encode_message(signal, data))
 		msg_id = can_dbc.get_message_by_name(signal).frame_id
 		commands.send_can(self.ser, bus, msg_id, raw_data)

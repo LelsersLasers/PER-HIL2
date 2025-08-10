@@ -1,6 +1,8 @@
 from typing import Optional
 import os
-import cantools.database.can.database
+
+import cantools
+import cantools.database.can.database as cantools_db
 
 import test_device
 import can_helper
@@ -8,6 +10,7 @@ import action
 import dut_cons
 import component
 import net_map
+
 
 class Hil2:
 	def __init__(self,
@@ -22,7 +25,7 @@ class Hil2:
 			device_config_path
 		)
 		self.dut_cons: dut_cons.DutCons = dut_cons.DutCons.from_json(test_config_path)
-		self.can_dbc: cantools.database.can.database.Database = cantools.db.load_file(os.path.join(can_dbc_path))
+		self.can_dbc: cantools_db.Database = cantools.db.load_file(os.path.join(can_dbc_path))
 
 	def _map_to_hil_device_con(self, board: str, net: str) -> dut_cons.HilDutCon:
 		maybe_hil_dut_con = self.test_device_manager.maybe_hil_con_from_net(board, net)

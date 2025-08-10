@@ -1,6 +1,6 @@
 from typing import Optional
 
-import cantools.database.can.database
+import cantools.database.can.database as cantools_db
 
 import serial_helper
 import can_helper
@@ -81,7 +81,7 @@ def send_can(ser: serial_helper.ThreadedSerial, bus: int, signal: int, data: lis
 
 def parse_can_messages(
 	ser: serial_helper.ThreadedSerial,
-	bus: int, can_dbc: cantools.database.can.database.Database
+	bus: int, can_dbc: cantools_db.Database
 ) -> list[can_helper.CanMessage]:
     return [
         can_helper.CanMessage(

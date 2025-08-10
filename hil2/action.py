@@ -1,6 +1,6 @@
 from typing import Optional, Union
 
-import cantools.database.can.database
+import cantools.database.can.database as cantools_db
 
 ActionType = Union[
 	'SetDo',
@@ -49,26 +49,26 @@ class SetPot:
 
 class SendCan:
 	__match_args__ = ("signal", "data", "can_dbc")
-	def __init__(self, signal: str | int, data: dict, can_dbc: cantools.database.can.database.Database):
+	def __init__(self, signal: str | int, data: dict, can_dbc: cantools_db.Database):
 		self.signal: str | int = signal
 		self.data: dict = data
-		self.can_dbc: cantools.database.can.database.Database = can_dbc
+		self.can_dbc: cantools_db.Database = can_dbc
 
 class GetLastCan:
 	__match_args__ = ("signal", "can_dbc")
-	def __init__(self, signal: Optional[str | int], can_dbc: cantools.database.can.database.Database):
+	def __init__(self, signal: Optional[str | int], can_dbc: cantools_db.Database):
 		self.signal: Optional[str | int] = signal
-		self.can_dbc: cantools.database.can.database.Database = can_dbc
+		self.can_dbc: cantools_db.Database = can_dbc
 
 class GetAllCan:
 	__match_args__ = ("signal", "can_dbc")
-	def __init__(self, signal: Optional[str | int], can_dbc: cantools.database.can.database.Database):
+	def __init__(self, signal: Optional[str | int], can_dbc: cantools_db.Database):
 		self.signal: Optional[str | int] = signal
-		self.can_dbc: cantools.database.can.database.Database = can_dbc
+		self.can_dbc: cantools_db.Database = can_dbc
 
 class ClearCan:
 	__match_args__ = ("signal", "can_dbc")
-	def __init__(self, signal: Optional[str | int], can_dbc: cantools.database.can.database.Database):
+	def __init__(self, signal: Optional[str | int], can_dbc: cantools_db.Database):
 		self.signal: Optional[str | int] = signal
-		self.can_dbc: cantools.database.can.database.Database = can_dbc
+		self.can_dbc: cantools_db.Database = can_dbc
 
