@@ -10,7 +10,10 @@ ActionType = Union[
 	'HiZAo',
 	'GetAi',
 	'SetPot',
-	'GetLastCan'
+	'SendCan',
+	'GetLastCan',
+	'GetAllCan',
+	'ClearCan'
 ]
 
 class SetDo:
