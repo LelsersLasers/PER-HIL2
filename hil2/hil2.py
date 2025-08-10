@@ -83,7 +83,7 @@ class Hil2:
 	#--------------------------------------------------------------------------#
 
 	# POT ---------------------------------------------------------------------#
-	def set_pot(self, board: str, net: str, value: int) -> None:
+	def set_pot(self, board: str, net: str, value: float) -> None:
 		self.test_device_manager.do_action(action.SetPot(value), self._map_to_hil_device_con(board, net))
 
 	def pot(self, board: str, net: str) -> component.POT:

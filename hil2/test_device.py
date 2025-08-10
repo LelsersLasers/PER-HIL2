@@ -39,6 +39,12 @@ class DacConfig:
 class PotConfig:
 	def __init__(self, pot_config: dict):
 		self.bit_resolution: int = pot_config.get("bit_resolution")
+		self.reference_ohms: float = pot_config.get("reference_ohms")
+		self.wiper_ohms: float = pot_config.get("wiper_ohms")
+
+	def ohms_to_raw(self, value: float) -> int:
+		steps = self.bit_resolution ** 2  - 1
+		return int((steps * (value - self.wiper_ohms)) / self.reference_ohms)
 
 class Port:
 	def __init__(self, port: dict):
@@ -172,8 +178,9 @@ class TestDevice:
 		else:
 			raise ValueError(f"Unsupported AI mode: {mode}")
 
-	def set_pot(self, pin: int, value: int) -> None:
-		commands.write_pot(self.ser, pin, value)
+	def set_pot(self, pin: int, value: float) -> None:
+		raw_value = self.pot_config.ohms_to_raw(value)
+		commands.write_pot(self.ser, pin, raw_value)
 
 	def update_can_messages(self, bus: int, can_dbc: cantools.database.can.database.Database) -> None:
 		self.device_can_busses[bus].add_multiple(
