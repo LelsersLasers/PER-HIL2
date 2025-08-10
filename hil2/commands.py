@@ -15,7 +15,7 @@ READ_ADC   = 5 # command, pin               -> READ_ADC, value high, value low
 WRITE_POT  = 6 # command, pin/offset, value -> []
 SEND_CAN   = 7 # command, bus, signal high, signal low, length, data (8 bytes) -> []
 RECV_CAN   = 8 # <async>                    -> CAN_MESSAGE, bus, signal high, signal low, length, data (length bytes)
-
+ERROR      = 9 # <async/any>                -> ERROR, command
 
 def read_id(ser: serial_helper.ThreadedSerial) -> Optional[int]:
 	command = [READ_ID]
@@ -74,8 +74,9 @@ def send_can(ser: serial_helper.ThreadedSerial, bus: int, signal: int, data: lis
 		raise ValueError("CAN signal out of range (0 to 2031)")
 	signal_high = (signal >> 8) & 0xFF
 	signal_low = signal & 0xFF
+	length = len(data)
 	padding = [0] * (8 - len(data))
-	command = [SEND_CAN, bus, signal_high, signal_low, len(data), *data, *padding]
+	command = [SEND_CAN, bus, signal_high, signal_low, length, *data, *padding]
 	ser.write(bytearray(command))
 
 def parse_can_messages(
@@ -114,5 +115,8 @@ def parse_readings(
 				parsed_can_messages[bus] = []
 			parsed_can_messages[bus].append([bus, signal_high, signal_low, length, *data])
 			return True, remaining
+		case [ERROR, command, *rest]:
+			print(f"!! Error command received: {command}")
+			return True, rest
 		case _:
 			return False, readings
