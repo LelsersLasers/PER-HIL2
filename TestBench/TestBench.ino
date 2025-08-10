@@ -4,21 +4,26 @@
 
 #include "Adafruit_MCP4706.h"
 #include "SW_MCP4017.h"
+//----------------------------------------------------------------------------//
 
 
-#define SERIAL_BAUDRATE 115200
 const int TESTER_ID = 1;
 
 
+// Serial conf ---------------------------------------------------------------//
+#define SERIAL_BAUDRATE 115200
 #define SERIAL_CON Serial
+//----------------------------------------------------------------------------//
 
-
+// DAC conf ------------------------------------------------------------------//
 #define NUM_DACS 8
 #define DAC_WIRE Wire
 #define DAC_SDA 17
 #define DAC_SCL 24
 #define DAC_BASE_ADDR 0x60
+//----------------------------------------------------------------------------//
 
+// Digipot conf ------------------------------------------------------------//
 #define DIGIPOT_1_WIRE Wire1
 #define DIGIPOT_1_SDA 25
 #define DIGIPOT_1_SCL 16
@@ -27,60 +32,68 @@ const int TESTER_ID = 1;
 #define DIGIPOT_2_SDA 18
 #define DIGIPOT_2_SCL 19
 
+const uint8_t DIGIPOT_MAX_STEPS = 128;
+const float DIGIPOT_MAX_OHMS = 10000;
+//----------------------------------------------------------------------------//
+
+// CAN conf ------------------------------------------------------------------//
 #define CAN_BAUDRATE 500000
 #define CAN_RX RX_SIZE_256
 #define CAN_TX TX_SIZE_16
-
-#define CAN_RESPONSE_NO_MESSAGE 0x01
-#define CAN_RESPONSE_FOUND      0x02
-#define CAN_IGNORE_ID           0xFF
-
-const uint8_t DIGIPOT_MAX_STEPS = 128;
-const float DIGIPOT_MAX_OHMS = 10000;
+//----------------------------------------------------------------------------//
 
 
+// Global peripherals --------------------------------------------------------//
 Adafruit_MCP4706 dacs[NUM_DACS];
 bool dac_power_down[NUM_DACS];
 
-MCP4017 digipot1(DIGIPOT_MAX_STEPS, DIGIPOT_MAX_OHMS);
-MCP4017 digipot2(DIGIPOT_MAX_STEPS, DIGIPOT_MAX_OHMS);
+MCP4017 digipot1(DIGIPOT_MAX_STEPS, DIGIPOT_MAX_OHMS); // pin/offset: 1
+MCP4017 digipot2(DIGIPOT_MAX_STEPS, DIGIPOT_MAX_OHMS); // pin/offset: 2
+
+FlexCAN_T4<CAN1, CAN_RX, CAN_TX> vCan; // bus: 1
+FlexCAN_T4<CAN3, CAN_RX, CAN_TX> mCan; // bus: 2
+CAN_message_t recv_msg = { 0 };
+//----------------------------------------------------------------------------//
 
 
-FlexCAN_T4<CAN1, CAN_RX, CAN_TX> vCan; // id: 1
-FlexCAN_T4<CAN3, CAN_RX, CAN_TX> mCan; // id: 2
-
-
-enum GpioCommand {
-	READ_ADC   = 0, 
-	READ_GPIO  = 1, 
-	WRITE_DAC  = 2, 
-	WRITE_GPIO = 3,
-	READ_ID    = 4,
-	WRITE_POT  = 5,
-	READ_CAN   = 6,
-	WRITE_CAN  = 7
+// Serial commands -----------------------------------------------------------//
+enum SerialCommand : uint8_t {
+	READ_ID    = 0, // command                    -> READ_ID, id
+	WRITE_GPIO = 1, // command, pin, value        -> []
+	READ_GPIO  = 2, // command, pin               -> READ_GPIO, value
+	WRITE_DAC  = 3, // command, pin/offset, value -> []
+	HIZ_DAC    = 4, // command, pin/offset        -> []
+	READ_ADC   = 5, // command, pin               -> READ_ADC, value high, value low
+	WRITE_POT  = 6, // command, pin/offset, value -> []
+	SEND_CAN   = 7, // command, bus, signal high, signal low, length, data (8 bytes) -> []
+	RECV_CAN   = 8, // <async>                    -> CAN_MESSAGE, bus, signal high, signal low, length, data (length bytes)
+	ERROR      = 9, // <async/any>                -> ERROR, command
 };
 
-int TO_READ[] = { // Parrallel to GpioCommand
-	2, // READ_ADC - command, pin
-	2, // READ_GPIO - command, pin
-	3, // WRITE_DAC - command, pin, value
-	3, // WRITE_GPIO - command, pin, value
-	1, // READ_ID - command
-	3, // WRITE_POT - command, pin, value
-	5, // READ_CAN - command, bus, ignore id, id bit 1, id bit 2
-	13 // WRITE_CAN - command, bus, id bit 1, id bit 2, len, data (8 bytes)
+size_t TO_READ[] = { // Parrallel to SerialCommand
+	1,  // READ_ID
+	3,  // WRITE_GPIO
+	2,  // READ_GPIO
+	3,  // WRITE_DAC
+	2,  // HIZ_DAC
+	2,  // READ_ADC
+	3,  // WRITE_POT
+	13, // SEND_CAN
 };
 
 // 13 = max(TO_READ)
-uint8_t data[13] = { 0 };
-int data_index = 0;
-bool data_ready = false;
+uint8_t g_serial_data[13] = { 0 };
+size_t g_data_index = 0;
+bool g_data_ready = false;
+//----------------------------------------------------------------------------//
 
 
+// Setup ---------------------------------------------------------------------//
 void setup() {
+	// Serial setup
 	SERIAL_CON.begin(SERIAL_BAUDRATE);
 
+	// DAC setup
 	DAC_WIRE.setSDA(DAC_SDA);
 	DAC_WIRE.setSCL(DAC_SCL);
 
@@ -92,6 +105,7 @@ void setup() {
 		dac_power_down[i] = true; // start with power down
 	}
 
+	// Digipot setup
 	DIGIPOT_1_WIRE.setSDA(DIGIPOT_1_SDA);
 	DIGIPOT_1_WIRE.setSCL(DIGIPOT_1_SCL);
 	digipot1.begin(MCP4017ADDRESS, DIGIPOT_1_WIRE);
@@ -100,6 +114,7 @@ void setup() {
 	DIGIPOT_2_WIRE.setSCL(DIGIPOT_2_SCL);
 	digipot2.begin(MCP4017ADDRESS, DIGIPOT_2_WIRE);
 
+	// CAN setup
 	vCan.begin();
 	vCan.setBaudRate(CAN_BAUDRATE);
 	vCan.enableFIFO();
@@ -108,120 +123,80 @@ void setup() {
 	mCan.setBaudRate(CAN_BAUDRATE);
 	mCan.enableFIFO();
 }
-
-void error(String error_string) {
-	SERIAL_CON.write(0xFF);
-	SERIAL_CON.write(0xFF);
-	SERIAL_CON.println(error_string);
-}
+//----------------------------------------------------------------------------//
 
 
+// Loop ----------------------------------------------------------------------//
 void loop() {
 	if (data_ready) {
 		data_ready = false;
 		data_index = 0;
 
-		GpioCommand command = (GpioCommand) data[0];
+		SerialCommand command = (SerialCommand) data[0];
 
 		switch (command) {
-		case GpioCommand::READ_ADC: {
-			int pin = data[1];
-			// if (pin <= ANALOG_PIN_COUNT)
-			if (1) {
-				int val = analogRead(pin);
-				SERIAL_CON.write((val >> 8) & 0xFF);
-				SERIAL_CON.write(val & 0xFF);
-			} else {
-				error("ADC PIN COUNT EXCEEDED");
-			}
+		case SerialCommand::READ_ID: {
+			SERIAL_CON.write(SerialCommand::READ_ID);
+			SERIAL_CON.write(TESTER_ID);
 			break;
 		}
-		case GpioCommand::READ_GPIO: {
-			int pin = data[1];
-				if (pin >= 200 && pin < 200 + NUM_DACS) {
-					int dac_idx = pin - 200;
-					dacs[dac_idx].setMode(MCP4706_PWRDN_500K);
-					dac_power_down[dac_idx] = true;
-					SERIAL_CON.write(0x01);
-				} else {
-					pinMode(pin, INPUT);
-					int val = digitalRead(pin);
-					SERIAL_CON.write(val & 0xFF);
-				}
-			break;
-		}
-		case GpioCommand::WRITE_DAC: {
-			int pin = data[1];
+		case SerialCommand::WRITE_GPIO: {
+			uint8_t pin = data[1];
 			uint8_t value = data[2];
-				int dac_idx = pin - 200;
-				if (dac_idx >= 0 && dac_idx < NUM_DACS) {
-					if (dac_power_down[dac_idx]) {
-						dacs[dac_idx].setMode(MCP4706_AWAKE);
-						dac_power_down[dac_idx] = false;
-					}
-					dacs[dac_idx].setVoltage(value);
-				}
-
-			break;
-		}
-		case GpioCommand::WRITE_GPIO: {
-			int pin = data[1];
-			int value = data[2];
 			pinMode(pin, OUTPUT);
 			digitalWrite(pin, value);
 			break;
 		}
-		case GpioCommand::READ_ID: {
-			SERIAL_CON.write(TESTER_ID);
+		case SerialCommand::READ_GPIO: {
+			uint8_t pin = data[1];
+			pinMode(pin, INPUT);
+			int val = digitalRead(pin);
+			SERIAL_CON.write(SerialCommand::READ_GPIO);
+			SERIAL_CON.write(val & 0xFF);
 			break;
 		}
-		case GpioCommand::WRITE_POT: {
-			int pin = data[1];
+		case SerialCommand::WRITE_DAC: {
+			uint8_t offset = data[1];
 			uint8_t value = data[2];
-				if (pin == 1) {
-					digipot1.setSteps(value);
-				} else if (pin == 2) {
-					digipot2.setSteps(value); 
-				} else {
-					error("POT PIN COUNT EXCEEDED");
-				}
-		}
-		case GpioCommand::READ_CAN: {
-			int bus = data[1];
-			uint8_t ignore_id = data[2];
-			uint32_t id = (data[3] << 8) | data[4]; // 11-bit ID
-			CAN_message_t msg = { 0 };
-			bool found = false;
-
-			if (bus == 1) {
-				while (vCan.read(msg)) {
-					if (msg.id == id || ignore_id == CAN_IGNORE_ID) { found = true; break; }
-				}
-			} else if (bus == 2) {
-				while (mCan.read(msg)) {
-					if (msg.id == id || ignore_id == CAN_IGNORE_ID) { found = true; break; }
-				}
-			} else {
-				error("CAN BUS NOT SUPPORTED");
+			if dac_power_down[offset]) {
+				dacs[offset].setMode(MCP4706_AWAKE);
+				dac_power_down[offset] = false;
 			}
-
-			if (found) {
-				SERIAL_CON.write(CAN_RESPONSE_FOUND);
-				SERIAL_CON.write((uint8_t *)&msg.id, 4);
-				SERIAL_CON.write(msg.len);
-				SERIAL_CON.write(msg.buf, 8);
-			} else {
-				SERIAL_CON.write(CAN_RESPONSE_NO_MESSAGE);
+			dacs[offset].setVoltage(value);
+			break;
+		}
+		case SerialCommand::HIZ_DAC: {
+			uint8_t offset = data[1];
+			dacs[offset].setMode(MCP4706_PWRDN_500K);
+			dac_power_down[offset] = true;
+			break;
+		}
+		case SerialCommand::READ_ADC: {
+			uint8_t pin = data[1];
+			int val = analogRead(pin);
+			SERIAL_CON.write(SerialCommand::READ_ADC);
+			SERIAL_CON.write((val >> 8) & 0xFF); // high
+			SERIAL_CON.write(val & 0xFF); // low
+			break;
+		}
+		case SerialCommand::WRITE_POT: {
+			uint8_t offset = data[1];
+			uint8_t value = data[2];
+			if (offset == 1) {
+				digipot1.setSteps(value);
+			} else if (offset == 2) {
+				digipot2.setSteps(value);
 			}
 			break;
 		}
-		case GpioCommand::WRITE_CAN: {
-			int bus = data[1];
+		case SerialCommand::SEND_CAN: {
+			uint8_t bus = data[1];
+			uint16_t signal = (data[2] << 8) | data[3]; // 11-bit ID
+			uint8_t length = data[4];
 			CAN_message_t msg = { 0 };
-			msg.id = (data[2] << 8) | data[3]; // 11-bit ID
-			msg.len = data[4];
-			memcpy(msg.buf, &data[5], msg.len);
-
+			msg.id = signal;
+			msg.len = length;
+			memcpy(msg.buf, &data[5], length);
 			msg.len = 8;
 			msg.edl = 0;
 			msg.brs = 0;
@@ -232,20 +207,32 @@ void loop() {
 				vCan.write(msg);
 			} else if (bus == 2) {
 				mCan.write(msg);
-			} else {
-				error("CAN BUS NOT SUPPORTED");
 			}
 			break;
 		}
-	} else {
-		if (SERIAL_CON.available() > 0) {
-			data[data_index] = SERIAL_CON.read();
-			data_index++;
-
-			uint8_t command = data[0];
-			if (data_index == TO_READ[command]) {
-				data_ready = true;
-			}
 		}
+	} else if (SERIAL_CON.available() > 0) {
+		data[data_index] = SERIAL_CON.read();
+		data_index++;
+
+		uint8_t command = data[0];
+		if (data_index == TO_READ[command]) {
+			data_ready = true;
+		}
+	} else if (vcan.read(recv_msg)) {
+		SERIAL_CON.write(RECV_CAN);
+		SERIAL_CON.write(1);                    // bus 1
+		SERIAL_CON.write((recv_msg.id >> 8) & 0xFF); // signal high
+		SERIAL_CON.write(recv_msg.id & 0xFF);        // signal low
+		SERIAL_CON.write(recv_msg.len);              // length
+		SERIAL_CON.write(recv_msg.buf, recv_msg.len);     // data
+	} else if (mCan.read(recv_msg)) {
+		SERIAL_CON.write(RECV_CAN);
+		SERIAL_CON.write(2);                    // bus 2
+		SERIAL_CON.write((recv_msg.id >> 8) & 0xFF); // signal high
+		SERIAL_CON.write(recv_msg.id & 0xFF);        // signal low
+		SERIAL_CON.write(recv_msg.len);              // length
+		SERIAL_CON.write(recv_msg.buf, recv_msg.len);     // data
 	}
 }
+//----------------------------------------------------------------------------//
