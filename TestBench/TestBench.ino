@@ -23,7 +23,7 @@ const int TESTER_ID = 1;
 #define DAC_BASE_ADDR 0x60
 //----------------------------------------------------------------------------//
 
-// Digipot conf ------------------------------------------------------------//
+// Digipot conf --------------------------------------------------------------//
 #define DIGIPOT_1_WIRE Wire1
 #define DIGIPOT_1_SDA 25
 #define DIGIPOT_1_SCL 16
@@ -83,7 +83,7 @@ size_t TO_READ[] = { // Parrallel to SerialCommand
 
 // 13 = max(TO_READ)
 uint8_t g_serial_data[13] = { 0 };
-size_t g_data_index = 0;
+size_t g_data_idx = 0;
 bool g_data_ready = false;
 //----------------------------------------------------------------------------//
 
@@ -128,11 +128,11 @@ void setup() {
 
 // Loop ----------------------------------------------------------------------//
 void loop() {
-	if (data_ready) {
-		data_ready = false;
-		data_index = 0;
+	if (g_data_ready) {
+		g_data_ready = false;
+		g_data_idx = 0;
 
-		SerialCommand command = (SerialCommand) data[0];
+		SerialCommand command = (SerialCommand) g_serial_data[0];
 
 		switch (command) {
 		case SerialCommand::READ_ID: {
@@ -141,14 +141,14 @@ void loop() {
 			break;
 		}
 		case SerialCommand::WRITE_GPIO: {
-			uint8_t pin = data[1];
-			uint8_t value = data[2];
+			uint8_t pin = g_serial_data[1];
+			uint8_t value = g_serial_data[2];
 			pinMode(pin, OUTPUT);
 			digitalWrite(pin, value);
 			break;
 		}
 		case SerialCommand::READ_GPIO: {
-			uint8_t pin = data[1];
+			uint8_t pin = g_serial_data[1];
 			pinMode(pin, INPUT);
 			int val = digitalRead(pin);
 			SERIAL_CON.write(SerialCommand::READ_GPIO);
@@ -156,9 +156,9 @@ void loop() {
 			break;
 		}
 		case SerialCommand::WRITE_DAC: {
-			uint8_t offset = data[1];
-			uint8_t value = data[2];
-			if dac_power_down[offset]) {
+			uint8_t offset = g_serial_data[1];
+			uint8_t value = g_serial_data[2];
+			if (dac_power_down[offset]) {
 				dacs[offset].setMode(MCP4706_AWAKE);
 				dac_power_down[offset] = false;
 			}
@@ -166,13 +166,13 @@ void loop() {
 			break;
 		}
 		case SerialCommand::HIZ_DAC: {
-			uint8_t offset = data[1];
+			uint8_t offset = g_serial_data[1];
 			dacs[offset].setMode(MCP4706_PWRDN_500K);
 			dac_power_down[offset] = true;
 			break;
 		}
 		case SerialCommand::READ_ADC: {
-			uint8_t pin = data[1];
+			uint8_t pin = g_serial_data[1];
 			int val = analogRead(pin);
 			SERIAL_CON.write(SerialCommand::READ_ADC);
 			SERIAL_CON.write((val >> 8) & 0xFF); // high
@@ -180,8 +180,8 @@ void loop() {
 			break;
 		}
 		case SerialCommand::WRITE_POT: {
-			uint8_t offset = data[1];
-			uint8_t value = data[2];
+			uint8_t offset = g_serial_data[1];
+			uint8_t value = g_serial_data[2];
 			if (offset == 1) {
 				digipot1.setSteps(value);
 			} else if (offset == 2) {
@@ -190,17 +190,14 @@ void loop() {
 			break;
 		}
 		case SerialCommand::SEND_CAN: {
-			uint8_t bus = data[1];
-			uint16_t signal = (data[2] << 8) | data[3]; // 11-bit ID
-			uint8_t length = data[4];
+			uint8_t bus = g_serial_data[1];
+			uint16_t signal = (g_serial_data[2] << 8) | g_serial_data[3]; // 11-bit ID
+			uint8_t length = g_serial_data[4];
 			CAN_message_t msg = { 0 };
 			msg.id = signal;
 			msg.len = length;
-			memcpy(msg.buf, &data[5], length);
-			msg.len = 8;
-			msg.edl = 0;
-			msg.brs = 0;
-			msg.esi = 0;
+			memcpy(msg.buf, &g_serial_data[5], length);
+			msg.len = length;
 			msg.flags.extended = false; 
 
 			if (bus == 1) {
@@ -212,27 +209,27 @@ void loop() {
 		}
 		}
 	} else if (SERIAL_CON.available() > 0) {
-		data[data_index] = SERIAL_CON.read();
-		data_index++;
+		g_serial_data[g_data_idx] = SERIAL_CON.read();
+		g_data_idx++;
 
-		uint8_t command = data[0];
-		if (data_index == TO_READ[command]) {
-			data_ready = true;
+		uint8_t command = g_serial_data[0];
+		if (g_data_idx == TO_READ[command]) {
+			g_data_ready = true;
 		}
-	} else if (vcan.read(recv_msg)) {
+	} else if (vCan.read(recv_msg)) {
 		SERIAL_CON.write(RECV_CAN);
-		SERIAL_CON.write(1);                    // bus 1
-		SERIAL_CON.write((recv_msg.id >> 8) & 0xFF); // signal high
-		SERIAL_CON.write(recv_msg.id & 0xFF);        // signal low
-		SERIAL_CON.write(recv_msg.len);              // length
-		SERIAL_CON.write(recv_msg.buf, recv_msg.len);     // data
+		SERIAL_CON.write(1);                          // bus 1
+		SERIAL_CON.write((recv_msg.id >> 8) & 0xFF);  // signal high
+		SERIAL_CON.write(recv_msg.id & 0xFF);         // signal low
+		SERIAL_CON.write(recv_msg.len);               // length
+		SERIAL_CON.write(recv_msg.buf, recv_msg.len); // g_serial_data
 	} else if (mCan.read(recv_msg)) {
 		SERIAL_CON.write(RECV_CAN);
-		SERIAL_CON.write(2);                    // bus 2
-		SERIAL_CON.write((recv_msg.id >> 8) & 0xFF); // signal high
-		SERIAL_CON.write(recv_msg.id & 0xFF);        // signal low
-		SERIAL_CON.write(recv_msg.len);              // length
-		SERIAL_CON.write(recv_msg.buf, recv_msg.len);     // data
+		SERIAL_CON.write(2);                          // bus 2
+		SERIAL_CON.write((recv_msg.id >> 8) & 0xFF);  // signal high
+		SERIAL_CON.write(recv_msg.id & 0xFF);         // signal low
+		SERIAL_CON.write(recv_msg.len);               // length
+		SERIAL_CON.write(recv_msg.buf, recv_msg.len); // data
 	}
 }
 //----------------------------------------------------------------------------//
