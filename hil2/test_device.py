@@ -1,8 +1,9 @@
 from typing import Any, Optional
 
 import json
+import threading
 
-import serial
+import cantools.database.can.database
 
 import can_helper
 import dut_cons
@@ -69,7 +70,7 @@ class MuxSelect:
 class CanBus:
 	def __init__(self, can_bus: dict):
 		self.name: str = can_bus.get("name")
-		self.port: int = can_bus.get("port")
+		self.bus: int = can_bus.get("bus")
 
 
 class TestDevice:
@@ -82,7 +83,7 @@ class TestDevice:
 		adc_config: AdcConfig,
 		dac_config: DacConfig,
 		pot_config: PotConfig,
-		serial_con: serial.Serial
+		ser: serial_helper.ThreadedSerial
 	):
 		self.hil_id: int = hil_id
 		self.name: str = name
@@ -92,7 +93,7 @@ class TestDevice:
 		self.adc_config: AdcConfig = adc_config
 		self.dac_config: DacConfig = dac_config
 		self.pot_config: PotConfig = pot_config
-		self.serial_con: serial.Serial = serial_con
+		self.ser: serial_helper.ThreadedSerial = ser
 
 		self.device_can_busses: dict[str, can_helper.CanMessageManager] = dict(map(
 			lambda c: (c.name, can_helper.CanMessageManager()),
@@ -105,7 +106,7 @@ class TestDevice:
 		cls,
 		hil_id: int,
 		name: str,
-		serial_con: serial.Serial,
+		ser: serial_helper.ThreadedSerial,
 		device_config_path: str
 	):
 		with open(device_config_path, 'r') as device_config_path:
@@ -128,12 +129,12 @@ class TestDevice:
 			adc_config,
 			dac_config,
 			pot_config,
-			serial_con
+			ser
 		)
 	
 	def close(self) -> None:
 		# TODO: close all ports
-		self.serial_con.close()
+		self.ser.stop()
 	
 	def select_mux(self, mux_select: MuxSelect) -> None:
 		for i, p in enumerate(mux_select.mux.select_ports):
@@ -142,23 +143,23 @@ class TestDevice:
 		self.set_ao(mux_select.mux.port, mux_select)
 	
 	def set_do(self, pin: int, value: bool) -> None:
-		commands.write_gpio(self.serial_con, pin, value)
+		commands.write_gpio(self.ser, pin, value)
 
 	def hiZ_do(self, pin: int) -> None:
-		commands.read_gpio(self.serial_con, pin)
+		commands.read_gpio(self.ser, pin)
 
 	def get_di(self, pin: int) -> bool:
-		return commands.read_gpio(self.serial_con, pin)
+		return commands.read_gpio(self.ser, pin)
 
 	def set_ao(self, pin: int, value: float) -> None:
 		raw_value = self.dac_config.v_to_raw(value)
-		commands.write_dac(self.serial_con, pin, raw_value)
+		commands.write_dac(self.ser, pin, raw_value)
 	
 	def hiZ_ao(self, pin: int) -> None:
-		commands.hiZ_dac(self.serial_con, pin)
+		commands.hiZ_dac(self.ser, pin)
 	
 	def get_ai(self, pin: int, mode: str) -> float:
-		raw_value = commands.read_adc(self.serial_con, pin)
+		raw_value = commands.read_adc(self.ser, pin)
 		if mode == 'AI5':
 			return self.adc_config.raw_to_5v(raw_value)
 		elif mode == 'AI24':
@@ -167,7 +168,17 @@ class TestDevice:
 			raise ValueError(f"Unsupported AI mode: {mode}")
 
 	def set_pot(self, pin: int, value: int) -> None:
-		commands.write_pot(self.serial_con, pin, value)	
+		commands.write_pot(self.ser, pin, value)
+
+	def update_can_messages(self, bus: int, can_dbc: cantools.database.can.database.Database) -> None:
+		self.device_can_busses[bus].add_multiple(
+			commands.parse_can_messages(self.ser, bus, can_dbc)
+		)
+
+	def send_can(self, bus: int, signal: str | int, data: dict, can_dbc: cantools.database.can.database.Database) -> None:
+		raw_data = list(can_dbc.encode_message(signal, data))
+		msg_id = can_dbc.get_message_by_name(signal).frame_id
+		commands.send_can(self.ser, bus, msg_id, raw_data)
 
 	def do_action(self, action_type: action.ActionType, port: str) -> Any:
 		maybe_port = self.ports.get(port, None)
@@ -215,14 +226,21 @@ class TestDevice:
 			# Set Pot + direct port
 			case (action.SetPot(value), mp, _, _) if mp is not None and mp.mode == 'POT':
 				self.set_pot(mp.port, value)
+			# Send CAN msg + can bus name
+			case (action.SendCan(signal, data, can_dbc), _, _, mcb) if mcb is not None:
+				self.update_can_messages(mcb.bus, can_dbc)
+				self.send_can(mcb.bus, signal, data, can_dbc)
 			# Get last CAN msg + can bus name
-			case (action.GetLastCan(signal), _, _, mcb) if mcb is not None:
+			case (action.GetLastCan(signal, can_dbc), _, _, mcb) if mcb is not None:
+				self.update_can_messages(mcb.bus, can_dbc)
 				return self.device_can_busses[mcb.name].get_last(signal)
 			# Get all CAN msgs + can bus name
-			case (action.GetAllCan(signal), _, _, mcb) if mcb is not None:
+			case (action.GetAllCan(signal, can_dbc), _, _, mcb) if mcb is not None:
+				self.update_can_messages(mcb.bus, can_dbc)
 				return self.device_can_busses[mcb.name].get_all(signal)
 			# Clear CAN msgs + can bus name
-			case (action.ClearCan(signal), _, _, mcb) if mcb is not None:
+			case (action.ClearCan(signal, can_dbc), _, _, mcb) if mcb is not None:
+				self.update_can_messages(mcb.bus, can_dbc)
 				self.device_can_busses[mcb.name].clear(signal)
 			# Unsupported action
 			case _:
@@ -242,6 +260,23 @@ class TestDeviceManager:
 			test_config.get("hil_devices")
 		))
 		hil_devices = serial_helper.discover_devices(hil_ids)
+
+		stop_events = dict(map(
+			lambda device: (device.get("id"), threading.Event()),
+			test_config.get("hil_devices")
+		))
+
+		sers = dict(map(
+			lambda device: (device.get("id"), serial_helper.ThreadedSerial(
+				hil_devices[device.get("id")],
+				stop_events[device.get("id")]
+			)),
+			test_config.get("hil_devices")
+		))
+
+		for ser in sers.values():
+			t = threading.Thread(target=ser.run)
+			t.start()
 		
 		test_devices = dict(map(
 			lambda device: (device.get("name"), TestDevice.from_json(

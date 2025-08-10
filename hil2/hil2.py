@@ -3,6 +3,7 @@ import os
 import cantools.database.can.database
 
 import test_device
+import can_helper
 import action
 import dut_cons
 import component
@@ -45,8 +46,34 @@ class Hil2:
 			hiZ_fn=lambda: self.hiZ_ao(board, net)
 		)
 	
-	def get_last_can(self, hil_board: str, can_bus: str, signal: Optional[str | int]) -> Optional[dict]:
+	def send_can(self, hil_board: str, can_bus: str, signal: str | int, data: dict) -> None:
+		self.test_device_manager.do_action(
+			action.SendCan(signal, data, self.can_dbc),
+			self.test_device_manager.maybe_hil_con_from_net(hil_board, can_bus)
+		)
+
+	def get_last_can(self, hil_board: str, can_bus: str, signal: Optional[str | int] = None) -> Optional[can_helper.CanMessage]:
 		return self.test_device_manager.do_action(
-			action.GetLastCan(signal),
-			self._map_to_hil_device_con(hil_board, can_bus)
+			action.GetLastCan(signal, self.can_dbc),
+			self.test_device_manager.maybe_hil_con_from_net(hil_board, can_bus)
+		)
+	
+	def get_all_can(self, hil_board: str, can_bus: str, signal: Optional[str | int] = None) -> list[can_helper.CanMessage]:
+		return self.test_device_manager.do_action(
+			action.GetAllCan(signal, self.can_dbc),
+			self.test_device_manager.maybe_hil_con_from_net(hil_board, can_bus)
+		)
+	
+	def clear_can(self, hil_board: str, can_bus: str, signal: Optional[str | int] = None) -> None:
+		self.test_device_manager.do_action(
+			action.ClearCan(signal, self.can_dbc),
+			self.test_device_manager.maybe_hil_con_from_net(hil_board, can_bus)
+		)
+
+	def can(self, hil_board: str, can_bus: str) -> component.CAN:
+		return component.CAN(
+			lambda signal, data: self.send_can(hil_board, can_bus, signal, data),
+			lambda signal: self.get_last_can(hil_board, can_bus, signal),
+			lambda signal: self.get_all_can(hil_board, can_bus, signal),
+			lambda signal: self.clear_can(hil_board, can_bus, signal)
 		)

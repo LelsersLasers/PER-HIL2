@@ -1,4 +1,6 @@
+from typing import Optional
 import time
+import threading
 
 import serial
 import serial.tools.list_ports
@@ -45,3 +47,59 @@ def discover_devices(hil_ids: list[int]) -> dict[int, serial.Serial]:
 			raise ValueError(f"Failed to discover HIL device with ID {hil_id} on any port")
 	
 	return devices
+
+class ThreadedSerial:
+	def __init__(self, serial_con: serial.Serial, stop_event: threading.Event):
+		self.serial_con: serial.Serial = serial_con
+		self.stop_event: threading.Event = stop_event
+		self.readings: list[int] = []
+		self.parsed_readings: dict[int, list[int]] = {}
+		self.parsed_can_messages: dict[int, list[list[int]]] = {}
+		self.lock = threading.Lock()
+
+	def write(self, data: bytes) -> None:
+		self.serial_con.write(data)
+
+	def _read(self):
+		read_data = self.serial_con.read(1)
+		if len(read_data) < 1:
+			return
+		value = int.from_bytes(read_data, "big")
+		self.readings.append(value)
+
+	def _process_readings(self):
+		processed = True
+		while processed:
+			processed, self.readings = commands.parse_readings(self.readings, self.parsed_readings, self.parsed_can_messages)
+
+	def _get_readings(self, command: int) -> Optional[list[int]]:
+		with self.lock:
+			val = self.parsed_readings.pop(command, None)
+			return val
+		
+	def get_readings_with_timeout(self, command: int, timeout: float = 0.1, sleep_interval = 0.01) -> Optional[list[int]]:
+		deadline = time.time() + timeout
+		while time.time() < deadline:
+			if (reading := self._get_readings(command)) is not None:
+				return reading
+			time.sleep(sleep_interval)
+		return None
+	
+	def get_parsed_can_messages(self, bus: int) -> list[list[int]]:
+		with self.lock:
+			return self.parsed_can_messages.pop(bus, [])
+		
+	def stop(self):
+		self.stop_event.set()
+
+	def _close(self):
+		self.serial_con.close()
+	
+	def run(self):
+		while not self.stop_event.is_set():
+			self._read()
+			if len(self.readings) > 0:
+				with self.lock:
+					self._process_readings()
+
+		self._close()

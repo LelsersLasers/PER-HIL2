@@ -10,15 +10,16 @@ class CanMessageManager:
 	def __init__(self):
 		self.messages: list[CanMessage] = []
 
-	def get_last(self, signal: Optional[str | int]) -> Optional[dict]:
-		if signal is None:
-			return self.messages[-1] if self.messages else None
+	def add_multiple(self, messages: list[CanMessage]) -> None:
+		self.messages.extend(messages)
+
+	def get_last(self, signal: Optional[str | int]) -> Optional[CanMessage]:
 		return next(
 			filter(lambda msg: msg.signal == signal, reversed(self.messages)),
 			None
 		)
 	
-	def get_all(self, signal: Optional[str | int] = None) -> list[dict]:
+	def get_all(self, signal: Optional[str | int] = None) -> list[CanMessage]:
 		return list(filter(
 			lambda msg: msg.signal == signal,
 			self.messages
