@@ -6,45 +6,45 @@
         { "name": "DMUX",   "mode": "DI",   "select_ports": [2, 3, 4, 5],     "port": 6  }
     ],
     
-    "ports":[
-        {"port":20, "name":"RLY1", "mode": "DO", "notes":"relay"},
-        {"port":21, "name":"RLY2", "mode": "DO", "notes":"relay"},
-        {"port":22, "name":"RLY3", "mode": "DO", "notes":"relay"},
-        {"port":23, "name":"RLY4", "mode": "DO", "notes":"relay"},
+    "ports": [
+        { "port":20, "name":"RLY1", "mode": "DO", "notes":"relay" },
+        { "port":21, "name":"RLY2", "mode": "DO", "notes":"relay" },
+        { "port":22, "name":"RLY3", "mode": "DO", "notes":"relay" },
+        { "port":23, "name":"RLY4", "mode": "DO", "notes":"relay" },
 
-        {"port":32, "name":"24vSW1", "mode": "DO", "notes":"24V switch"},
-        {"port":33, "name":"24vSW2", "mode": "DO", "notes":"24V switch"},
+        { "port":32, "name":"24vSW1", "mode": "DO", "notes":"24V switch" },
+        { "port":33, "name":"24vSW2", "mode": "DO", "notes":"24V switch" },
 
-        {"port":15, "name":"DAI1", "mode": "AI24", "notes":"Direct 24v Scaled Analog Input"},
-        {"port":14, "name":"DAI2", "mode": "AI5",  "notes":"Direct 5v Scaled Analog Input"},
+        { "port":15, "name":"DAI1", "mode": "AI24", "notes":"Direct 24v Scaled Analog Input" },
+        { "port":14, "name":"DAI2", "mode": "AI5",  "notes":"Direct 5v Scaled Analog Input" },
 
-        {"port":7,  "name":"DO1",  "mode": "DO", "notes":"5v Digital Output"},
-        {"port":8,  "name":"DO2",  "mode": "DO", "notes":"5v Digital Output"},
-        {"port":9,  "name":"DO3",  "mode": "DO", "notes":"5v Digital Output"},
-        {"port":10, "name":"DO4",  "mode": "DO", "notes":"5v Digital Output"},
-        {"port":11, "name":"DO5",  "mode": "DO", "notes":"5v Digital Output"},
-        {"port":12, "name":"DO6",  "mode": "DO", "notes":"5v Digital Output"},
-        {"port":13, "name":"DO7",  "mode": "DO", "notes":"5v Digital Output"},
-        {"port":41, "name":"DO8",  "mode": "DO", "notes":"5v Digital Output"},
-        {"port":40, "name":"DO9",  "mode": "DO", "notes":"5v Digital Output"},
-        {"port":39, "name":"DO10", "mode": "DO", "notes":"5v Digital Output"},
+        { "port":7,  "name":"DO1",  "mode": "DO", "notes":"5v Digital Output" },
+        { "port":8,  "name":"DO2",  "mode": "DO", "notes":"5v Digital Output" },
+        { "port":9,  "name":"DO3",  "mode": "DO", "notes":"5v Digital Output" },
+        { "port":10, "name":"DO4",  "mode": "DO", "notes":"5v Digital Output" },
+        { "port":11, "name":"DO5",  "mode": "DO", "notes":"5v Digital Output" },
+        { "port":12, "name":"DO6",  "mode": "DO", "notes":"5v Digital Output" },
+        { "port":13, "name":"DO7",  "mode": "DO", "notes":"5v Digital Output" },
+        { "port":41, "name":"DO8",  "mode": "DO", "notes":"5v Digital Output" },
+        { "port":40, "name":"DO9",  "mode": "DO", "notes":"5v Digital Output" },
+        { "port":39, "name":"DO10", "mode": "DO", "notes":"5v Digital Output" },
 
-        {"port":200, "name":"DAC1", "mode": "AO", "notes":"5V 8-bit DAC"},
-        {"port":201, "name":"DAC2", "mode": "AO", "notes":"5V 8-bit DAC"},
-        {"port":202, "name":"DAC3", "mode": "AO", "notes":"5V 8-bit DAC"},
-        {"port":203, "name":"DAC4", "mode": "AO", "notes":"5V 8-bit DAC"},
-        {"port":204, "name":"DAC5", "mode": "AO", "notes":"5V 8-bit DAC"},
-        {"port":205, "name":"DAC6", "mode": "AO", "notes":"5V 8-bit DAC"},
-        {"port":206, "name":"DAC7", "mode": "AO", "notes":"5V 8-bit DAC"},
-        {"port":207, "name":"DAC8", "mode": "AO", "notes":"5V 8-bit DAC"},
+        { "port":200, "name":"DAC1", "mode": "AO", "notes":"5V 8-bit DAC" },
+        { "port":201, "name":"DAC2", "mode": "AO", "notes":"5V 8-bit DAC" },
+        { "port":202, "name":"DAC3", "mode": "AO", "notes":"5V 8-bit DAC" },
+        { "port":203, "name":"DAC4", "mode": "AO", "notes":"5V 8-bit DAC" },
+        { "port":204, "name":"DAC5", "mode": "AO", "notes":"5V 8-bit DAC" },
+        { "port":205, "name":"DAC6", "mode": "AO", "notes":"5V 8-bit DAC" },
+        { "port":206, "name":"DAC7", "mode": "AO", "notes":"5V 8-bit DAC" },
+        { "port":207, "name":"DAC8", "mode": "AO", "notes":"5V 8-bit DAC" },
 
-        {"port":1, "name":"POT1", "mode": "POT", "notes":"7-bit Digipot"},
-        {"port":2, "name":"POT2", "mode": "POT", "notes":"7-bit Digipot"}
+        { "port":1, "name":"POT1", "mode": "POT", "notes":"7-bit Digipot" },
+        { "port":2, "name":"POT2", "mode": "POT", "notes":"7-bit Digipot" }
     ],
 
     "can": [
-        {"bus":1, "name":"VCAN", "notes":"Vechicle CAN Bus"},
-        {"bus":2, "name":"MCAN", "notes":"Motor CAN Bus"}
+        { "bus":1, "name":"VCAN", "notes":"Vechicle CAN Bus" },
+        { "bus":2, "name":"MCAN", "notes":"Motor CAN Bus" }
     ],
     
     "adc_config": {
@@ -53,6 +53,11 @@
         "5v_reference_v": 1.5625,
         "24v_reference_v": 2.18181818182
     },
-    "dac_config":{"bit_resolution":8, "reference_v":5.0},
-    "pot_config":{"bit_resolution":7}
+    "dac_config": {
+		"bit_resolution":8,
+		"reference_v": 5.0
+	},
+    "pot_config": {
+		"bit_resolution":7
+	}
 }
