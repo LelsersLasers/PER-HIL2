@@ -54,7 +54,7 @@
         "24v_reference_v": 2.18181818182
     },
     "dac_config": {
-		"bit_resolution":8,
+		"bit_resolution": 8,
 		"reference_v": 5.0
 	},
     "pot_config": {
