@@ -42,10 +42,9 @@
         {"port":2, "name":"POT2", "mode": "POT", "notes":"7-bit Digipot"}
     ],
 
-    "can_note": "Use CAN like: [can_name]_#, where # is the can message ID",
     "can": [
-        {"port":1, "name":"VCAN", "notes":"Vechicle CAN Bus"},
-        {"port":2, "name":"MCAN", "notes":"Motor CAN Bus"}
+        {"bus":1, "name":"VCAN", "notes":"Vechicle CAN Bus"},
+        {"bus":2, "name":"MCAN", "notes":"Motor CAN Bus"}
     ],
     
     "adc_config": {
