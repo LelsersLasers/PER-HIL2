@@ -19,11 +19,14 @@ class AdcConfig:
 		self.five_v_reference_v: float = adc_config.get("5v_reference_v")
 		self.twenty_four_v_reference_v: float = adc_config.get("24v_reference_v")
 
-	# TODO
+	def raw_to_v(self, raw_value: int) -> float:
+		return (raw_value / (2 ** self.bit_resolution - 1)) * self.adc_reference_v
+
 	def raw_to_5v(self, raw_value: int) -> float:
-		...
+		return (self.raw_to_v(raw_value) / self.five_v_reference_v) * 5.0
+	
 	def raw_to_24v(self, raw_value: int) -> float:
-		...
+		return (self.raw_to_v(raw_value) / self.twenty_four_v_reference_v) * 24.0
 
 class DacConfig:
 	def __init__(self, dac_config: dict):
@@ -31,7 +34,7 @@ class DacConfig:
 		self.reference_v: float = dac_config.get("reference_v")
 
 	def v_to_raw(self, value: float) -> int:
-		...
+		return int((value / self.reference_v) * (2 ** self.bit_resolution - 1))
 
 class PotConfig:
 	def __init__(self, pot_config: dict):
@@ -164,6 +167,8 @@ class TestDevice:
 			return self.adc_config.raw_to_5v(raw_value)
 		elif mode == 'AI24':
 			return self.adc_config.raw_to_24v(raw_value)
+		elif mode == 'AI':
+			return self.adc_config.raw_to_v(raw_value)
 		else:
 			raise ValueError(f"Unsupported AI mode: {mode}")
 

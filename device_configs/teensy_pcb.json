@@ -51,7 +51,8 @@
         "bit_resolution": 10,
         "adc_reference_v": 3.3,
         "5v_reference_v": 1.5625,
-        "24v_reference_v": 2.18181818182
+        "24v_reference_v": 2.18181818182,
+		"notes": "Xv reference is the voltage the teensy will see when the input is at X volts"
     },
     "dac_config": {
 		"bit_resolution": 8,
