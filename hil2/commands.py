@@ -17,6 +17,7 @@ SEND_CAN   = 7 # command, bus, signal high, signal low, length, data (8 bytes) -
 RECV_CAN   = 8 # <async>                    -> CAN_MESSAGE, bus, signal high, signal low, length, data (length bytes)
 ERROR      = 9 # <async/any>                -> ERROR, command
 
+
 def read_id(ser: serial_helper.ThreadedSerial) -> Optional[int]:
 	command = [READ_ID]
 	ser.write(bytearray(command))
@@ -31,7 +32,6 @@ def read_id(ser: serial_helper.ThreadedSerial) -> Optional[int]:
 def write_gpio(ser: serial_helper.ThreadedSerial, pin: int, value: bool) -> None:
 	command = [WRITE_GPIO, pin, int(value)]
 	ser.write(bytearray(command))
-	
 
 def read_gpio(ser: serial_helper.ThreadedSerial, pin: int) -> bool:
 	command = [READ_GPIO, pin]
@@ -78,6 +78,7 @@ def send_can(ser: serial_helper.ThreadedSerial, bus: int, signal: int, data: lis
 	padding = [0] * (8 - len(data))
 	command = [SEND_CAN, bus, signal_high, signal_low, length, *data, *padding]
 	ser.write(bytearray(command))
+
 
 def parse_can_messages(
 	ser: serial_helper.ThreadedSerial,

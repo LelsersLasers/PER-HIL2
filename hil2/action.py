@@ -2,6 +2,7 @@ from typing import Optional, Union
 
 import cantools.database.can.database as cantools_db
 
+
 ActionType = Union[
 	'SetDo',
 	'HiZDo',

@@ -1,5 +1,6 @@
 import json
 
+
 class HilDutCon:
 	def __init__(self, device: str, port: str):
 		self.device: str = device
@@ -8,6 +9,7 @@ class HilDutCon:
 	@classmethod
 	def from_json(cls, hil_dut_con: dict) -> 'HilDutCon':
 		return cls(hil_dut_con.get("device"), hil_dut_con.get("port"))
+
 
 class DutCon:
 	def __init__(self, connector: str, pin: int):
@@ -18,6 +20,7 @@ class DutCon:
 	def from_json(cls, dut_con: dict) -> 'DutCon':
 		return cls(dut_con.get("connector"), dut_con.get("pin"))
 
+
 class DutBoardCons:
 	def __init__(self, harness_connections: list[dict]):
 		self.harness_connections: dict[DutCon, HilDutCon] = dict(map(
@@ -27,6 +30,7 @@ class DutBoardCons:
 
 	def get_hil_device_connection(self, dut_con: DutCon) -> HilDutCon:
 		return self.harness_connections[dut_con]
+
 
 class DutCons:
 	def __init__(self, dut_connections: dict[DutBoardCons]):

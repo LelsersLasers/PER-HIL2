@@ -6,6 +6,7 @@ class CanMessage:
 		self.signal: str | int = signal
 		self.data: dict = data
 
+
 class CanMessageManager:
 	def __init__(self):
 		self.messages: list[CanMessage] = []

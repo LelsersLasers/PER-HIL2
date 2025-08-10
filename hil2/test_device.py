@@ -28,6 +28,7 @@ class AdcConfig:
 	def raw_to_24v(self, raw_value: int) -> float:
 		return (self.raw_to_v(raw_value) / self.twenty_four_v_reference_v) * 24.0
 
+
 class DacConfig:
 	def __init__(self, dac_config: dict):
 		self.bit_resolution: int = dac_config.get("bit_resolution")
@@ -35,6 +36,7 @@ class DacConfig:
 
 	def v_to_raw(self, value: float) -> int:
 		return int((value / self.reference_v) * (2 ** self.bit_resolution - 1))
+
 
 class PotConfig:
 	def __init__(self, pot_config: dict):
@@ -46,11 +48,13 @@ class PotConfig:
 		steps = self.bit_resolution ** 2  - 1
 		return int((steps * (value - self.wiper_ohms)) / self.reference_ohms)
 
+
 class Port:
 	def __init__(self, port: dict):
 		self.name: str = port.get("name")
 		self.port: int = port.get("port")
 		self.mode: str = port.get("mode")
+
 
 class Mux:
 	def __init__(self, mux: dict):
@@ -71,10 +75,12 @@ class Mux:
 		except ValueError:
 			return None
 
+
 class MuxSelect:
 	def __init__(self, mux: Mux, select: int):
 		self.mux: Mux = mux
 		self.select: int = select
+
 
 class CanBus:
 	def __init__(self, can_bus: dict):
@@ -257,7 +263,8 @@ class TestDevice:
 			# Unsupported action
 			case _:
 				raise ValueError(f"Action {type(action)} not supported for port {port} on device {self.name}")
-	
+
+
 class TestDeviceManager:
 	def __init__(self, test_devices: dict[str, TestDevice]):
 		self.test_devices: dict[str, TestDevice] = test_devices

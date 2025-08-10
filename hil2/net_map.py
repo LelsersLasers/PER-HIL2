@@ -17,6 +17,7 @@ class NetMapEntry:
         self.designator = designator
         self.connector_name = connector_name
 
+
 class NetMap:
     def __init__(self, entries: dict[board_net.BoardNet, NetMapEntry]):
         self._entries: dict[board_net.BoardNet, NetMapEntry] = entries
