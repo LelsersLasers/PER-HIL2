@@ -125,6 +125,12 @@ void setup() {
 }
 //----------------------------------------------------------------------------//
 
+// Error handling ------------------------------------------------------------//
+void send_error(uint8_t command) {
+	SERIAL_CON.write(SerialCommand::ERROR);
+	SERIAL_CON.write(command);
+}
+//----------------------------------------------------------------------------//
 
 // Loop ----------------------------------------------------------------------//
 void loop() {
@@ -158,6 +164,12 @@ void loop() {
 		case SerialCommand::WRITE_DAC: {
 			uint8_t offset = g_serial_data[1];
 			uint8_t value = g_serial_data[2];
+			
+			if (offset >= NUM_DACS) {
+				send_error(command);
+				break;
+			}
+
 			if (dac_power_down[offset]) {
 				dacs[offset].setMode(MCP4706_AWAKE);
 				dac_power_down[offset] = false;
@@ -167,6 +179,12 @@ void loop() {
 		}
 		case SerialCommand::HIZ_DAC: {
 			uint8_t offset = g_serial_data[1];
+			
+			if (offset >= NUM_DACS) {
+				send_error(command);
+				break;
+			}
+
 			dacs[offset].setMode(MCP4706_PWRDN_500K);
 			dac_power_down[offset] = true;
 			break;
@@ -186,6 +204,8 @@ void loop() {
 				digipot1.setSteps(value);
 			} else if (offset == 2) {
 				digipot2.setSteps(value);
+			} else {
+				send_error(command);
 			}
 			break;
 		}
@@ -204,12 +224,14 @@ void loop() {
 				vCan.write(msg);
 			} else if (bus == 2) {
 				mCan.write(msg);
+			} else {
+				send_error(command);
+				break;
 			}
 			break;
 		}
 		default: {
-			SERIAL_CON.write(SerialCommand::ERROR);
-			SERIAL_CON.write(command);
+			send_error(command);
 			break;
 		}
 		}
