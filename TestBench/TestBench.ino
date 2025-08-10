@@ -207,6 +207,11 @@ void loop() {
 			}
 			break;
 		}
+		default: {
+			SERIAL_CON.write(SerialCommand::ERROR);
+			SERIAL_CON.write(command);
+			break;
+		}
 		}
 	} else if (SERIAL_CON.available() > 0) {
 		g_serial_data[g_data_idx] = SERIAL_CON.read();
