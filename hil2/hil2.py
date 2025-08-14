@@ -5,12 +5,12 @@ import os
 import cantools
 import cantools.database.can.database as cantools_db
 
-import test_device
-import can_helper
 import action
-import dut_cons
+import can_helper
 import component
+import dut_cons
 import net_map
+import test_device
 
 
 class Hil2:

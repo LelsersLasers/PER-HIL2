@@ -5,10 +5,10 @@ import threading
 
 import cantools.database.can.database as cantools_db
 
-import can_helper
-import dut_cons
 import action
+import can_helper
 import commands
+import dut_cons
 import serial_helper
 
 

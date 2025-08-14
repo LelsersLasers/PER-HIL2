@@ -2,8 +2,8 @@ from typing import Optional
 
 import cantools.database.can.database as cantools_db
 
-import serial_helper
 import can_helper
+import serial_helper
 
 
 READ_ID    = 0 # command                    -> READ_ID, id

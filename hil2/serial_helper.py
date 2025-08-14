@@ -1,7 +1,7 @@
 from typing import Optional
 
-import time
 import threading
+import time
 
 import serial
 import serial.tools.list_ports
