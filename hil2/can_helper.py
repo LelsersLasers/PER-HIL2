@@ -9,28 +9,28 @@ class CanMessage:
 
 class CanMessageManager:
 	def __init__(self):
-		self.messages: list[CanMessage] = []
+		self._messages: list[CanMessage] = []
 
 	def add_multiple(self, messages: list[CanMessage]) -> None:
-		self.messages.extend(messages)
+		self._messages.extend(messages)
 
 	def get_last(self, signal: Optional[str | int]) -> Optional[CanMessage]:
 		return next(
-			filter(lambda msg: msg.signal == signal, reversed(self.messages)),
+			filter(lambda msg: msg.signal == signal, reversed(self._messages)),
 			None
 		)
 	
 	def get_all(self, signal: Optional[str | int] = None) -> list[CanMessage]:
 		return list(filter(
 			lambda msg: signal is None or msg.signal == signal,
-			self.messages
+			self._messages
 		))
 	
 	def clear(self, signal: Optional[str | int] = None) -> None:
 		if signal is None:
-			self.messages.clear()
+			self._messages.clear()
 		else:
-			self.messages = list(filter(
+			self._messages = list(filter(
 				lambda msg: msg.signal != signal,
-				self.messages
+				self._messages
 			))
