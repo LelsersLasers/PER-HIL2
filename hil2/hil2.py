@@ -32,7 +32,9 @@ class Hil2:
 			os.path.join(can_dbc_path)
 		)
 
-		self._shutdown_components: dict[net_map.BoardNet, component.ShutdownableComponent] = {}
+		self._shutdown_components: dict[
+			net_map.BoardNet, component.ShutdownableComponent
+		] = {}
 		
 		signal.signal(signal.SIGINT, self._handle_interrupt)
 

@@ -263,38 +263,50 @@ class TestDevice:
 			case (action.SetDo(value), mp, _, _) if mp is not None and mp.mode == 'DO':
 				self._set_do(mp.port, value)
 			# Set DO + mux select
-			case (action.SetDo(value), _, mms, _) if mms is not None and mms.mux.mode == 'DO':
+			case (
+				action.SetDo(value), _, mms, _
+			) if mms is not None and mms.mux.mode == 'DO':
 				self._select_mux(mms)
 				self._set_do(mms.mux.port, value)
 			# HiZ DO + direct port
 			case (action.HiZDo(), mp, _, _) if mp is not None and mp.mode == 'DO':
 				self._hiZ_do(mp.port)
 			# HiZ DO + mux select
-			case (action.HiZDo(), _, mms, _) if mms is not None and mms.mux.mode == 'DO':
+			case (
+				action.HiZDo(), _, mms, _
+			) if mms is not None and mms.mux.mode == 'DO':
 				self._select_mux(mms)
 				self._hiZ_do(mms.mux.port)
 			# Get DI + direct port
 			case (action.GetDi(), mp, _, _) if mp is not None and mp.mode == 'DI':
 				return self._get_di(mp.port)
 			# Get DI + mux select
-			case (action.GetDi(), _, mms, _) if mms is not None and mms.mux.mode == 'DI':
+			case (
+				action.GetDi(), _, mms, _) if mms is not None and mms.mux.mode == 'DI':
 				self._select_mux(mms)
 				return self._get_di(mms.mux.port)
 			# Set AO + direct port
-			case (action.SetAo(value), mp, _, _) if mp is not None and mp.mode == 'AO':
+			case (
+				action.SetAo(value), mp, _, _) if mp is not None and mp.mode == 'AO':
 				self._set_ao(mp.port, value)
 			# HiZ AO + direct port
 			case (action.HiZAo(), mp, _, _) if mp is not None and mp.mode == 'AO':
 				self._hiZ_ao(mp.port)
 			# Get AI + direct port
-			case (action.GetAi(), mp, _, _) if mp is not None and mp.mode.startswith('AI'):
-				return self._get_ai(mp.port, mms.mux.mode)
+			case (
+				action.GetAi(), mp, _, _
+			) if mp is not None and mp.mode.startswith('AI'):
+				return self._get_ai(mp.port, mp.mode)
 			# Get AI + mux select
-			case (action.GetAi(), _, mms, _) if mms is not None and mms.mux.mode.startswith('AI'):
+			case (
+				action.GetAi(), _, mms, _
+			) if mms is not None and mms.mux.mode.startswith('AI'):
 				self._select_mux(mms)
 				return self._get_ai(mms.mux.port, mms.mux.mode)
 			# Set Pot + direct port
-			case (action.SetPot(value), mp, _, _) if mp is not None and mp.mode == 'POT':
+			case (
+				action.SetPot(value), mp, _, _
+			) if mp is not None and mp.mode == 'POT':
 				self._set_pot(mp.port, value)
 			# Send CAN msg + can bus name
 			case (action.SendCan(signal, data, can_dbc), _, _, mcb) if mcb is not None:
