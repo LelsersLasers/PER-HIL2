@@ -198,29 +198,29 @@ class TestDevice:
 		# TODO: close all ports
 		self.ser.stop()
 	
-	def select_mux(self, mux_select: MuxSelect) -> None:
+	def _select_mux(self, mux_select: MuxSelect) -> None:
 		for i, p in enumerate(mux_select.mux.select_ports):
 			select_bit = 1 if (mux_select.select & (1 << i)) else 0
-			self.set_do(p, select_bit)
-		self.set_ao(mux_select.mux.port, mux_select)
+			self._set_do(p, select_bit)
+		self._set_ao(mux_select.mux.port, mux_select)
 	
-	def set_do(self, pin: int, value: bool) -> None:
+	def _set_do(self, pin: int, value: bool) -> None:
 		commands.write_gpio(self.ser, pin, value)
 
-	def hiZ_do(self, pin: int) -> None:
+	def _hiZ_do(self, pin: int) -> None:
 		commands.read_gpio(self.ser, pin)
 
-	def get_di(self, pin: int) -> bool:
+	def _get_di(self, pin: int) -> bool:
 		return commands.read_gpio(self.ser, pin)
 
-	def set_ao(self, pin: int, value: float) -> None:
+	def _set_ao(self, pin: int, value: float) -> None:
 		raw_value = self.dac_config.v_to_raw(value)
 		commands.write_dac(self.ser, pin, raw_value)
 	
-	def hiZ_ao(self, pin: int) -> None:
+	def _hiZ_ao(self, pin: int) -> None:
 		commands.hiZ_dac(self.ser, pin)
 	
-	def get_ai(self, pin: int, mode: str) -> float:
+	def _get_ai(self, pin: int, mode: str) -> float:
 		raw_value = commands.read_adc(self.ser, pin)
 		if mode == 'AI5':
 			return self.adc_config.raw_to_5v(raw_value)
@@ -231,16 +231,16 @@ class TestDevice:
 		else:
 			raise ValueError(f"Unsupported AI mode: {mode}")
 
-	def set_pot(self, pin: int, value: float) -> None:
+	def _set_pot(self, pin: int, value: float) -> None:
 		raw_value = self.pot_config.ohms_to_raw(value)
 		commands.write_pot(self.ser, pin, raw_value)
 
-	def update_can_messages(self, bus: int, can_dbc: cantools_db.Database) -> None:
+	def _update_can_messages(self, bus: int, can_dbc: cantools_db.Database) -> None:
 		self.device_can_busses[bus].add_multiple(
 			commands.parse_can_messages(self.ser, bus, can_dbc)
 		)
 
-	def send_can(
+	def _send_can(
 		self, bus: int, signal: str | int, data: dict, can_dbc: cantools_db.Database
 	) -> None:
 		raw_data = list(can_dbc.encode_message(signal, data))
@@ -261,56 +261,56 @@ class TestDevice:
 		match (action_type, maybe_port, maybe_mux_select, maybe_can_bus):
 			# Set DO + direct port
 			case (action.SetDo(value), mp, _, _) if mp is not None and mp.mode == 'DO':
-				self.set_do(mp.port, value)
+				self._set_do(mp.port, value)
 			# Set DO + mux select
 			case (action.SetDo(value), _, mms, _) if mms is not None and mms.mux.mode == 'DO':
-				self.select_mux(mms)
-				self.set_do(mms.mux.port, value)
+				self._select_mux(mms)
+				self._set_do(mms.mux.port, value)
 			# HiZ DO + direct port
 			case (action.HiZDo(), mp, _, _) if mp is not None and mp.mode == 'DO':
-				self.hiZ_do(mp.port)
+				self._hiZ_do(mp.port)
 			# HiZ DO + mux select
 			case (action.HiZDo(), _, mms, _) if mms is not None and mms.mux.mode == 'DO':
-				self.select_mux(mms)
-				self.hiZ_do(mms.mux.port)
+				self._select_mux(mms)
+				self._hiZ_do(mms.mux.port)
 			# Get DI + direct port
 			case (action.GetDi(), mp, _, _) if mp is not None and mp.mode == 'DI':
-				return self.get_di(mp.port)
+				return self._get_di(mp.port)
 			# Get DI + mux select
 			case (action.GetDi(), _, mms, _) if mms is not None and mms.mux.mode == 'DI':
-				self.select_mux(mms)
-				return self.get_di(mms.mux.port)
+				self._select_mux(mms)
+				return self._get_di(mms.mux.port)
 			# Set AO + direct port
 			case (action.SetAo(value), mp, _, _) if mp is not None and mp.mode == 'AO':
-				self.set_ao(mp.port, value)
+				self._set_ao(mp.port, value)
 			# HiZ AO + direct port
 			case (action.HiZAo(), mp, _, _) if mp is not None and mp.mode == 'AO':
-				self.hiZ_ao(mp.port)
+				self._hiZ_ao(mp.port)
 			# Get AI + direct port
 			case (action.GetAi(), mp, _, _) if mp is not None and mp.mode.startswith('AI'):
-				return self.get_ai(mp.port, mms.mux.mode)
+				return self._get_ai(mp.port, mms.mux.mode)
 			# Get AI + mux select
 			case (action.GetAi(), _, mms, _) if mms is not None and mms.mux.mode.startswith('AI'):
-				self.select_mux(mms)
-				return self.get_ai(mms.mux.port, mms.mux.mode)
+				self._select_mux(mms)
+				return self._get_ai(mms.mux.port, mms.mux.mode)
 			# Set Pot + direct port
 			case (action.SetPot(value), mp, _, _) if mp is not None and mp.mode == 'POT':
-				self.set_pot(mp.port, value)
+				self._set_pot(mp.port, value)
 			# Send CAN msg + can bus name
 			case (action.SendCan(signal, data, can_dbc), _, _, mcb) if mcb is not None:
-				self.update_can_messages(mcb.bus, can_dbc)
-				self.send_can(mcb.bus, signal, data, can_dbc)
+				self._update_can_messages(mcb.bus, can_dbc)
+				self._send_can(mcb.bus, signal, data, can_dbc)
 			# Get last CAN msg + can bus name
 			case (action.GetLastCan(signal, can_dbc), _, _, mcb) if mcb is not None:
-				self.update_can_messages(mcb.bus, can_dbc)
+				self._update_can_messages(mcb.bus, can_dbc)
 				return self.device_can_busses[mcb.name].get_last(signal)
 			# Get all CAN msgs + can bus name
 			case (action.GetAllCan(signal, can_dbc), _, _, mcb) if mcb is not None:
-				self.update_can_messages(mcb.bus, can_dbc)
+				self._update_can_messages(mcb.bus, can_dbc)
 				return self.device_can_busses[mcb.name].get_all(signal)
 			# Clear CAN msgs + can bus name
 			case (action.ClearCan(signal, can_dbc), _, _, mcb) if mcb is not None:
-				self.update_can_messages(mcb.bus, can_dbc)
+				self._update_can_messages(mcb.bus, can_dbc)
 				self.device_can_busses[mcb.name].clear(signal)
 			# Unsupported action
 			case _:
