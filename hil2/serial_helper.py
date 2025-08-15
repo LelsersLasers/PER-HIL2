@@ -17,9 +17,11 @@ GET_TIMEOUT = 0.1
 SLEEP_INTERVAL = 0.01
 
 
+# Discover ----------------------------------------------------------------------------#
 def discover_devices(hil_ids: list[int]) -> dict[int, serial.Serial]:
     """
-    Attempts to find HIL devices by sending an identification command to each serial port.
+    Attempts to find HIL devices by sending an identification command to each serial
+    port.
 
     :param hil_ids: A list of expected HIL device IDs
     :return: A dictionary mapping discovered HIL device IDs to their serial connections
@@ -71,6 +73,7 @@ def discover_devices(hil_ids: list[int]) -> dict[int, serial.Serial]:
     return devices
 
 
+# Threaded serial ---------------------------------------------------------------------#
 class ThreadedSerial:
     """
     A class that handles serial communication in a separate thread.

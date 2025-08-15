@@ -3,6 +3,7 @@ from typing import Callable, Optional
 import can_helper
 
 
+# Shutdownable component interface ----------------------------------------------------#
 class ShutdownableComponent:
     """Interface for components that need to be 'shutdown' when HIL is stopped"""
 
@@ -10,6 +11,7 @@ class ShutdownableComponent:
         raise NotImplementedError()
 
 
+# DO ----------------------------------------------------------------------------------#
 class DO(ShutdownableComponent):
     """Digital Output"""
 
@@ -42,6 +44,7 @@ class DO(ShutdownableComponent):
         self._hiZ_fn()
 
 
+# DI ----------------------------------------------------------------------------------#
 class DI:
     """Digital Input"""
 
@@ -60,6 +63,7 @@ class DI:
         return self._get_fn()
 
 
+# AO ----------------------------------------------------------------------------------#
 class AO(ShutdownableComponent):
     """Analog Output"""
 
@@ -92,6 +96,7 @@ class AO(ShutdownableComponent):
         self._hiZ_fn()
 
 
+# AI ----------------------------------------------------------------------------------#
 class AI:
     """Analog Input"""
 
@@ -110,6 +115,7 @@ class AI:
         return self._get_fn()
 
 
+# POT ---------------------------------------------------------------------------------#
 class POT:
     """Potentiometer"""
 
@@ -128,6 +134,7 @@ class POT:
         self._set_fn(value)
 
 
+# CAN ---------------------------------------------------------------------------------#
 class CAN:
     """CAN Bus Interface"""
 

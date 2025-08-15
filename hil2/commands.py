@@ -7,6 +7,7 @@ import hil_errors
 import serial_helper
 
 
+# Command constants -------------------------------------------------------------------#
 # fmt: off
 READ_ID    = 0 # command                    -> READ_ID, id
 WRITE_GPIO = 1 # command, pin, value        -> []
@@ -24,6 +25,7 @@ ERROR      = 9 # <async/any>                -> ERROR, command
 SERIAL_RESPONSES = [READ_ID, READ_GPIO, READ_ADC, RECV_CAN, ERROR]
 
 
+# Simple commands ---------------------------------------------------------------------#
 def read_id(ser: serial_helper.ThreadedSerial) -> Optional[int]:
     """
     Attempts to read the HIL ID from a device.
@@ -137,6 +139,7 @@ def write_pot(ser: serial_helper.ThreadedSerial, pin: int, raw_value: int) -> No
     ser.write(bytearray(command))
 
 
+# CAN commands/parsing ----------------------------------------------------------------#
 def send_can(
     ser: serial_helper.ThreadedSerial,
     bus: int,
@@ -177,6 +180,7 @@ def parse_can_messages(
     ]
 
 
+# Serial parsing/spliting -------------------------------------------------------------#
 def parse_readings(
     readings: list[int],
     parsed_readings: dict[int, list[int]],

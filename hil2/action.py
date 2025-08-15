@@ -3,7 +3,7 @@ from typing import Optional, Union
 import cantools.database.can.database as cantools_db
 
 
-# Union type representing all possible actions
+# Union type representing all possible actions ----------------------------------------#
 ActionType = Union[
     "SetDo",
     "HiZDo",
@@ -19,6 +19,7 @@ ActionType = Union[
 ]
 
 
+# DO actions --------------------------------------------------------------------------#
 class SetDo:
     """Action to set a digital output"""
 
@@ -38,6 +39,7 @@ class HiZDo:
         pass
 
 
+# DI actions --------------------------------------------------------------------------#
 class GetDi:
     """Action to get a digital input"""
 
@@ -45,6 +47,7 @@ class GetDi:
         pass
 
 
+# AO actions --------------------------------------------------------------------------#
 class SetAo:
     """Action to set an analog output"""
 
@@ -71,6 +74,7 @@ class GetAi:
         pass
 
 
+# POT actions -------------------------------------------------------------------------#
 class SetPot:
     """Action to set a potentiometer"""
 
@@ -83,6 +87,7 @@ class SetPot:
         self.value: int = value
 
 
+# CAN actions -------------------------------------------------------------------------#
 class SendCan:
     """Action to send a CAN message"""
 

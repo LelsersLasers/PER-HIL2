@@ -3,6 +3,7 @@ import json
 import hil_errors
 
 
+# HIL DUT Connection ------------------------------------------------------------------#
 class HilDutCon:
     """The HIL side of a DUT connection"""
 
@@ -30,6 +31,7 @@ class HilDutCon:
                 raise hil_errors.ConfigurationError(error_msg)
 
 
+# Test DUT Connection -----------------------------------------------------------------#
 class DutCon:
     """The tested side of a DUT connection"""
 
@@ -57,12 +59,13 @@ class DutCon:
                 raise hil_errors.ConfigurationError(error_msg)
 
 
+# DUT Board Connections ---------------------------------------------------------------#
 class DutBoardCons:
     def __init__(self, harness_connections: dict[DutCon, HilDutCon]):
         """
         :param harness_connections: A dictionary mapping DUT connections to HIL connections
         """
-        self._harness_connections = harness_connections
+        self._harness_connections: dict[DutCon, HilDutCon] = harness_connections
 
     @classmethod
     def from_json(cls, harness_connections: list[dict]) -> "DutBoardCons":
@@ -103,6 +106,7 @@ class DutBoardCons:
             raise hil_errors.ConnectionError(error_msg)
 
 
+# All DUT Connections -----------------------------------------------------------------#
 class DutCons:
     def __init__(self, dut_connections: dict[str, DutBoardCons]):
         """

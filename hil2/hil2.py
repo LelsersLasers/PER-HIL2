@@ -16,6 +16,7 @@ import test_device
 
 
 class Hil2:
+    # Init ----------------------------------------------------------------------------#
     def __init__(
         self,
         test_config_path: str,
@@ -60,6 +61,7 @@ class Hil2:
         # Capture the control-c signal to make sure we gracefully exit
         signal.signal(signal.SIGINT, self._handle_interrupt)
 
+    # Close ---------------------------------------------------------------------------#
     def _handle_interrupt(self, _signum, _frame) -> None:
         """
         Handle the interrupt signal (Ctrl+C) by shutting down components.
@@ -68,6 +70,7 @@ class Hil2:
             comp.shutdown()
         self._test_device_manager.close()
 
+    # Map -----------------------------------------------------------------------------#
     def _map_to_hil_device_con(self, board: str, net: str) -> dut_cons.HilDutCon:
         """
         Map a DUT connection (board/net or hil device/port) to a HIL device connection.
@@ -146,8 +149,6 @@ class Hil2:
         self._shutdown_components[net_map.BoardNet(board, net)] = comp
         return comp
 
-    # ----------------------------------------------------------------------------------#
-
     # DI ------------------------------------------------------------------------------#
     def get_di(self, board: str, net: str) -> bool:
         """
@@ -170,8 +171,6 @@ class Hil2:
         :return: The corresponding DI component
         """
         return component.DI(get_fn=lambda: self.get_di(board, net))
-
-    # ----------------------------------------------------------------------------------#
 
     # AO ------------------------------------------------------------------------------#
     def set_ao(self, board: str, net: str, value: float) -> None:
@@ -214,8 +213,6 @@ class Hil2:
         self._shutdown_components[net_map.BoardNet(board, net)] = comp
         return comp
 
-    # ----------------------------------------------------------------------------------#
-
     # AI ------------------------------------------------------------------------------#
     def get_ai(self, board: str, net: str) -> float:
         """
@@ -237,8 +234,6 @@ class Hil2:
         :param net: The name of the net (DUT net name or HIL device port)
         """
         return component.AI(get_fn=lambda: self.get_ai(board, net))
-
-    # ----------------------------------------------------------------------------------#
 
     # POT -----------------------------------------------------------------------------#
     def set_pot(self, board: str, net: str, value: float) -> None:
@@ -262,8 +257,6 @@ class Hil2:
         :return: The corresponding POT component
         """
         return component.POT(set_fn=lambda value: self.set_pot(board, net, value))
-
-    # ----------------------------------------------------------------------------------#
 
     # CAN -----------------------------------------------------------------------------#
     def send_can(
@@ -371,5 +364,3 @@ class Hil2:
             lambda signal: self.get_all_can(hil_board, can_bus, signal),
             lambda signal: self.clear_can(hil_board, can_bus, signal),
         )
-
-    # ----------------------------------------------------------------------------------#

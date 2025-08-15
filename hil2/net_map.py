@@ -3,6 +3,7 @@ import csv
 import hil_errors
 
 
+# Board net pairing -------------------------------------------------------------------#
 class BoardNet:
     """
     Represents a board/net combination in the net map (ex: 'Dashboard/BRK_STAT').
@@ -27,6 +28,7 @@ class BoardNet:
         return not (self == other)
 
 
+# CSV entry ---------------------------------------------------------------------------#
 class NetMapEntry:
     """Represents a row in the net map CSV file."""
 
@@ -43,10 +45,12 @@ class NetMapEntry:
         self.designator = designator
 
 
+# Net map -----------------------------------------------------------------------------#
 class NetMap:
     def __init__(self, entries: dict[BoardNet, NetMapEntry]):
         """
-        :param entries: A dictionary mapping board/net combinations to their net map entries
+        :param entries: A dictionary mapping board/net combinations to their net map
+                        entries
         """
         self._entries: dict[BoardNet, NetMapEntry] = entries
 

@@ -1,6 +1,7 @@
 from typing import Optional
 
 
+# CAN Message struct ------------------------------------------------------------------#
 class CanMessage:
     """Represents a parsed/decoded CAN message"""
 
@@ -14,6 +15,7 @@ class CanMessage:
         self.data: dict = data
 
 
+# CAN Message Manager class -----------------------------------------------------------#
 class CanMessageManager:
     """Manages a collection of CAN messages"""
 

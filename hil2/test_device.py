@@ -14,6 +14,7 @@ import hil_errors
 import serial_helper
 
 
+# Peripheral configuration ------------------------------------------------------------#
 class AdcConfig:
     """Configuration for an ADC (Analog-to-Digital Converter)."""
 
@@ -141,6 +142,7 @@ class PotConfig:
         return int((steps * (value - self.wiper_ohms)) / self.reference_ohms)
 
 
+# Interface configuration -------------------------------------------------------------#
 class Port:
     """Configuration for a port."""
 
@@ -224,7 +226,9 @@ class CanBus:
                 raise hil_errors.ConfigurationError("Invalid CAN Bus configuration")
 
 
+# Test device -------------------------------------------------------------------------#
 class TestDevice:
+    # Init ----------------------------------------------------------------------------#
     def __init__(
         self,
         hil_id: int,
@@ -337,6 +341,7 @@ class TestDevice:
             case ser:
                 ser.stop()
 
+    # Command handling ----------------------------------------------------------------#
     def _select_mux(self, mux_select: MuxSelect) -> None:
         """
         Select a MUX (Multiplexer) line.
@@ -502,6 +507,7 @@ class TestDevice:
             case ser:
                 commands.send_can(ser, bus, msg_id, raw_data)
 
+    # Action --------------------------------------------------------------------------#
     def do_action(self, action_type: action.ActionType, port: str) -> Any:
         """
         Perform a HIL action on a specific port.
@@ -600,6 +606,7 @@ class TestDevice:
                 raise hil_errors.EngineError(error_msg)
 
 
+# Test device manager -----------------------------------------------------------------#
 class TestDeviceManager:
     """
     Manages test devices for HIL (Hardware-in-the-Loop) simulation.
