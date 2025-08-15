@@ -26,8 +26,6 @@ class SetDo:
 
     def __init__(self, value: bool):
         """
-        Create the SetDo action.
-
         :param value: The value to set the digital output to (low = false, high = true)
         """
         self.value: bool = value
@@ -37,9 +35,6 @@ class HiZDo:
     """Action to set a digital output to high impedance (HiZ)"""
 
     def __init__(self):
-        """
-        Create the HiZDo action.
-        """
         pass
 
 
@@ -47,9 +42,6 @@ class GetDi:
     """Action to get a digital input"""
 
     def __init__(self):
-        """
-        Create the GetDi action.
-        """
         pass
 
 
@@ -60,8 +52,6 @@ class SetAo:
 
     def __init__(self, value: float):
         """
-        Create the SetAo action.
-
         :param value: The value (in volts) to set the analog output to
         """
         self.value: float = value
@@ -71,9 +61,6 @@ class HiZAo:
     """Action to set an analog output to high impedance (HiZ)"""
 
     def __init__(self):
-        """
-        Create the HiZAo action.
-        """
         pass
 
 
@@ -81,9 +68,6 @@ class GetAi:
     """Action to get an analog input"""
 
     def __init__(self):
-        """
-        Create the GetAi action.
-        """
         pass
 
 
@@ -94,8 +78,6 @@ class SetPot:
 
     def __init__(self, value: int):
         """
-        Create the SetPot action.
-
         :param value: The value (in ohms) to set the potentiometer to
         """
         self.value: int = value
@@ -108,8 +90,6 @@ class SendCan:
 
     def __init__(self, signal: str | int, data: dict, can_dbc: cantools_db.Database):
         """
-        Create the SendCan action.
-
         :param signal: The signal name or message ID to send
         :param data: The data to include in the CAN message. Will be encoded to bytes
         :param can_dbc: The CAN database to use for encoding the message
@@ -126,8 +106,6 @@ class GetLastCan:
 
     def __init__(self, signal: Optional[str | int], can_dbc: cantools_db.Database):
         """
-        Create the GetLastCan action.
-
         :param signal: The signal name or message ID to get. If not specified, the last
                        message will be returned (if any) regardless of the signal/id
         :param can_dbc: The CAN database to use for decoding the message
@@ -143,8 +121,6 @@ class GetAllCan:
 
     def __init__(self, signal: Optional[str | int], can_dbc: cantools_db.Database):
         """
-        Create the GetAllCan action.
-
         :param signal: The signal name or message ID to get. If not specified, all
                        messages will be returned (if any) regardless of the signal/id
         :param can_dbc: The CAN database to use for decoding the messages
@@ -160,8 +136,6 @@ class ClearCan:
 
     def __init__(self, signal: Optional[str | int], can_dbc: cantools_db.Database):
         """
-        Create the ClearCan action.
-
         :param signal: The signal name or message ID to clear. If not specified, all
                        messages will be cleared (if any) regardless of the signal/id
         :param can_dbc: The CAN database to use for decoding the messages
