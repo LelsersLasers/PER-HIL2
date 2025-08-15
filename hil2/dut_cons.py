@@ -76,16 +76,20 @@ class DutCons:
         board_cons = {}
         match test_config:
             case { "dut_connections": dut_connections }:
-                for board, connections in dut_connections.items():
-                    match connections:
-                        case { "harness_connections": harness_connections }:
+                for board_cons in dut_connections:
+                    ...
+                    match board_cons:
+                        case {
+                            "board": board,
+                            "harness_connections": harness_connections
+                        }:
                             board_cons[board] = DutBoardCons.from_json(
                                 harness_connections
                             )
                         case _:
                             error_msg = (
                                 "Invalid DUT connections configuration: "
-                                f"{connections}"
+                                f"{board_cons}"
                             )
                             raise hil_errors.ConfigurationError(error_msg)
             case _:
