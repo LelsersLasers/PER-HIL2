@@ -1,6 +1,19 @@
 import csv
 
-import board_net
+
+class BoardNet:
+	def __init__(self, board: str, net: str):
+		self._board: str = board
+		self._net: str = net
+
+	def __hash__(self):
+		return hash((self._board, self._net))
+
+	def __eq__(self, other):
+		return self._board == other.board and self._net == other.net
+	
+	def __neq__(self, other):
+		return not (self == other)
 
 
 class NetMapEntry:
@@ -19,8 +32,8 @@ class NetMapEntry:
 
 
 class NetMap:
-    def __init__(self, entries: dict[board_net.BoardNet, NetMapEntry]):
-        self._entries: dict[board_net.BoardNet, NetMapEntry] = entries
+    def __init__(self, entries: dict[BoardNet, NetMapEntry]):
+        self._entries: dict[BoardNet, NetMapEntry] = entries
 
     def get_entry(self, board: str, net: str) -> NetMapEntry:
         board_net = board_net.BoardNet(board, net)
