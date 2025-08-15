@@ -92,7 +92,7 @@ class Hil2:
             case (net_map, None):
                 net_map_entry = net_map.get_entry(board, net)
                 dut_con = dut_cons.DutCon(
-                    net_map_entry.connector_name, net_map_entry.designator
+                    net_map_entry.component, net_map_entry.designator
                 )
                 return self._dut_cons.get_hil_device_connection(board, dut_con)
             case (_, hil_dut_con):

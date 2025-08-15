@@ -30,21 +30,17 @@ class BoardNet:
 class NetMapEntry:
     """Represents a row in the net map CSV file."""
 
-    def __init__(
-        self, board: str, net: str, component: str, designator: int, connector_name: str
-    ):
+    def __init__(self, board: str, net: str, component: str, designator: int):
         """
         :param board: The name of the board (ex: 'Dashboard')
         :param net: The name of the net (ex: 'BRK_STAT')
         :param component: The name of the component (ex: 'J3')
         :param designator: The designator number (ex: 9)
-        :param connector_name: What board this net connects to (ex: 'MAIN')
         """
         self.board = board
         self.net = net
         self.component = component
         self.designator = designator
-        self.connector_name = connector_name
 
 
 class NetMap:
@@ -86,14 +82,12 @@ class NetMap:
                         "Net": net,
                         "Component": component,
                         "Designator": designator_str,
-                        "Connector Name": connector_name,
                     }:
                         entry = NetMapEntry(
                             board=board,
                             net=net,
                             component=component,
                             designator=int(designator_str),
-                            connector_name=connector_name,
                         )
                         board_net = BoardNet(entry.board, entry.net)
                         entries[board_net] = entry
