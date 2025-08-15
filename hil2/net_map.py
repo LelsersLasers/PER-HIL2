@@ -4,18 +4,18 @@ import hil_errors
 
 
 class BoardNet:
-	def __init__(self, board: str, net: str):
-		self._board: str = board
-		self._net: str = net
+    def __init__(self, board: str, net: str):
+        self._board: str = board
+        self._net: str = net
 
-	def __hash__(self):
-		return hash((self._board, self._net))
+    def __hash__(self):
+        return hash((self._board, self._net))
 
-	def __eq__(self, other):
-		return self._board == other.board and self._net == other.net
-	
-	def __neq__(self, other):
-		return not (self == other)
+    def __eq__(self, other):
+        return self._board == other.board and self._net == other.net
+    
+    def __neq__(self, other):
+        return not (self == other)
 
 
 class NetMapEntry:

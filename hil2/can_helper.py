@@ -2,35 +2,35 @@ from typing import Optional
 
 
 class CanMessage:
-	def __init__(self, signal: str | int, data: dict):
-		self.signal: str | int = signal
-		self.data: dict = data
+    def __init__(self, signal: str | int, data: dict):
+        self.signal: str | int = signal
+        self.data: dict = data
 
 
 class CanMessageManager:
-	def __init__(self):
-		self._messages: list[CanMessage] = []
+    def __init__(self):
+        self._messages: list[CanMessage] = []
 
-	def add_multiple(self, messages: list[CanMessage]) -> None:
-		self._messages.extend(messages)
+    def add_multiple(self, messages: list[CanMessage]) -> None:
+        self._messages.extend(messages)
 
-	def get_last(self, signal: Optional[str | int]) -> Optional[CanMessage]:
-		return next(
-			filter(lambda msg: msg.signal == signal, reversed(self._messages)),
-			None
-		)
-	
-	def get_all(self, signal: Optional[str | int] = None) -> list[CanMessage]:
-		return list(filter(
-			lambda msg: signal is None or msg.signal == signal,
-			self._messages
-		))
-	
-	def clear(self, signal: Optional[str | int] = None) -> None:
-		if signal is None:
-			self._messages.clear()
-		else:
-			self._messages = list(filter(
-				lambda msg: msg.signal != signal,
-				self._messages
-			))
+    def get_last(self, signal: Optional[str | int]) -> Optional[CanMessage]:
+        return next(
+            filter(lambda msg: msg.signal == signal, reversed(self._messages)),
+            None
+        )
+    
+    def get_all(self, signal: Optional[str | int] = None) -> list[CanMessage]:
+        return list(filter(
+            lambda msg: signal is None or msg.signal == signal,
+            self._messages
+        ))
+    
+    def clear(self, signal: Optional[str | int] = None) -> None:
+        if signal is None:
+            self._messages.clear()
+        else:
+            self._messages = list(filter(
+                lambda msg: msg.signal != signal,
+                self._messages
+            ))

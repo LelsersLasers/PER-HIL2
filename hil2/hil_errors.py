@@ -1,16 +1,16 @@
 
 
 class SerialError(Exception):
-	pass
+    pass
 
 class EngineError(Exception):
-	pass
+    pass
 
 class ConfigurationError(Exception):
-	pass
+    pass
 
 class ConnectionError(Exception):
-	pass
+    pass
 
 class RangeError(Exception):
-	pass
+    pass
