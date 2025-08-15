@@ -6,7 +6,7 @@ def hil2_init():
 	return h
 
 
-def main(h):
+def main(h: hil2.Hil2):
 	v_bat = h.ao("Main_Module", "VBatt")
 	v_bat.set(3.2)
 	val = v_bat.get()
