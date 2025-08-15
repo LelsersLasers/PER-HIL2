@@ -22,7 +22,7 @@ class CanMessageManager:
 	
 	def get_all(self, signal: Optional[str | int] = None) -> list[CanMessage]:
 		return list(filter(
-			lambda msg: msg.signal == signal,
+			lambda msg: signal is None or msg.signal == signal,
 			self.messages
 		))
 	
