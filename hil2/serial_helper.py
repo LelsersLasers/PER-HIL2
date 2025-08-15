@@ -13,6 +13,9 @@ SERIAL_BAUDRATE = 115200
 SERIAL_TIMEOUT = 0.1
 SERIAL_RETRIES = 5
 
+GET_TIMEOUT = 0.1
+SLEEP_INTERVAL = 0.01
+
 
 def discover_devices(hil_ids: list[int]) -> dict[int, serial.Serial]:
 	devices = {}
@@ -88,7 +91,10 @@ class ThreadedSerial:
 			return val
 		
 	def get_readings_with_timeout(
-        self, command: int, timeout: float = 0.1, sleep_interval = 0.01
+		self,
+		command: int,
+		timeout: float = GET_TIMEOUT,
+		sleep_interval: float = SLEEP_INTERVAL
 	) -> Optional[list[int]]:
 		deadline = time.time() + timeout
 		while time.time() < deadline:
