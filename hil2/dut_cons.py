@@ -93,8 +93,7 @@ class DutCons:
                             )
                             raise hil_errors.ConfigurationError(error_msg)
             case _:
-                error_msg = "Invalid DUT connections configuration"
-                raise hil_errors.ConfigurationError(error_msg)
+                pass # Not an error to have no DUT connections
 
         return cls(board_cons)
     
