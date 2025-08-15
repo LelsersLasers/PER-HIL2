@@ -1,7 +1,11 @@
 from typing import Callable, Optional
 
+class ShutdownableComponent:
+    def shutdown(self) -> None:
+        raise NotImplementedError()
 
-class DO:
+
+class DO(ShutdownableComponent):
     """Digital Output"""
 
     def __init__(self, set_fn: Callable[[bool], None], hiZ_fn: Callable[[], None]):
@@ -27,11 +31,8 @@ class DI:
     def get(self) -> bool:
         return self._get_fn()
     
-    def shutdown(self) -> None:
-        pass
 
-
-class AO:
+class AO(ShutdownableComponent):
     """Analog Output"""
 
     def __init__(self, set_fn: Callable[[float], None], hiZ_fn: Callable[[], None]):
@@ -57,9 +58,6 @@ class AI:
     def get(self) -> float:
         return self._get_fn()
     
-    def shutdown(self) -> None:
-        pass
-
 
 class POT:
     """Potentiometer"""
@@ -69,9 +67,6 @@ class POT:
 
     def set(self, value: int) -> None:
         self._set_fn(value)
-
-    def shutdown(self) -> None:
-        pass
 
 
 class CAN:

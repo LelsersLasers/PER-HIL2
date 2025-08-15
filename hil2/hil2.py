@@ -31,10 +31,14 @@ class Hil2:
 		self._can_dbc: cantools_db.Database = cantools.db.load_file(
 			os.path.join(can_dbc_path)
 		)
+
+		self._shutdown_components: dict[net_map.BoardNet, component.ShutdownableComponent] = {}
 		
 		signal.signal(signal.SIGINT, self._handle_interrupt)
 
 	def _handle_interrupt(self, _signum, _frame) -> None:
+		for comp in self._shutdown_components.values():
+			comp.shutdown()
 		self._test_device_manager.close()
 
 	def _map_to_hil_device_con(self, board: str, net: str) -> dut_cons.HilDutCon:
@@ -48,23 +52,27 @@ class Hil2:
 				return self._dut_cons.get_hil_device_connection(board, dut_con)
 			case hil_dut_con:
 				return hil_dut_con
-
+			
 	# DO ------------------------------------------------------------------------------#
 	def set_do(self, board: str, net: str, value: bool) -> None:
+		_ = self.do(board, net)  # Ensure component is registered to shutdown
 		self._test_device_manager.do_action(
 			action.SetDo(value), self._map_to_hil_device_con(board, net)
 		)
 		
 	def hiZ_do(self, board: str, net: str) -> None:
+		_ = self.do(board, net)  # Ensure component is registered to shutdown
 		self._test_device_manager.do_action(
 			action.HiZDo(), self._map_to_hil_device_con(board, net)
 		)
 
 	def do(self, board: str, net: str) -> component.DO:
-		return component.DO(
+		comp = component.DO(
 			set_fn=lambda value: self.set_do(board, net, value),
 			hiZ_fn=lambda: self.hiZ_do(board, net)
 		)
+		self._shutdown_components[net_map.BoardNet(board, net)] = comp
+		return comp
 	#----------------------------------------------------------------------------------#
 
 	# DI ------------------------------------------------------------------------------#
@@ -81,20 +89,24 @@ class Hil2:
 
 	# AO ------------------------------------------------------------------------------#
 	def set_ao(self, board: str, net: str, value: float) -> None:
+		_ = self.ao(board, net)  # Ensure component is registered to shutdown
 		self._test_device_manager.do_action(
 			action.SetAo(value), self._map_to_hil_device_con(board, net)
 		)
 
 	def hiZ_ao(self, board: str, net: str) -> None:
+		_ = self.ao(board, net)  # Ensure component is registered to shutdown
 		self._test_device_manager.do_action(
 			action.HiZAo(), self._map_to_hil_device_con(board, net)
 		)
 
 	def ao(self, board: str, net: str) -> component.AO:
-		return component.AO(
+		comp = component.AO(
 			set_fn=lambda value: self.set_ao(board, net, value),
 			hiZ_fn=lambda: self.hiZ_ao(board, net)
 		)
+		self._shutdown_components[net_map.BoardNet(board, net)] = comp
+		return comp
 	#----------------------------------------------------------------------------------#
 
 	# AI ------------------------------------------------------------------------------#
