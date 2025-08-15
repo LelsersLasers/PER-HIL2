@@ -40,6 +40,9 @@ const float DIGIPOT_MAX_OHMS = 10000;
 #define CAN_BAUDRATE 500000
 #define CAN_RX RX_SIZE_256
 #define CAN_TX TX_SIZE_16
+
+#define VCAN_BUS 1
+#define MCAN_BUS 2
 //----------------------------------------------------------------------------//
 
 
@@ -220,9 +223,9 @@ void loop() {
 			msg.len = length;
 			msg.flags.extended = false; 
 
-			if (bus == 1) {
+			if (bus == VCAN_BUS) {
 				vCan.write(msg);
-			} else if (bus == 2) {
+			} else if (bus == MCAN_BUS) {
 				mCan.write(msg);
 			} else {
 				send_error(command);
@@ -245,14 +248,14 @@ void loop() {
 		}
 	} else if (vCan.read(recv_msg)) {
 		SERIAL_CON.write(RECV_CAN);
-		SERIAL_CON.write(1);                          // bus 1
+		SERIAL_CON.write(VCAN_BUS);                   // bus 1
 		SERIAL_CON.write((recv_msg.id >> 8) & 0xFF);  // signal high
 		SERIAL_CON.write(recv_msg.id & 0xFF);         // signal low
 		SERIAL_CON.write(recv_msg.len);               // length
 		SERIAL_CON.write(recv_msg.buf, recv_msg.len); // g_serial_data
 	} else if (mCan.read(recv_msg)) {
 		SERIAL_CON.write(RECV_CAN);
-		SERIAL_CON.write(2);                          // bus 2
+		SERIAL_CON.write(MCAN_BUS)                    // bus 2
 		SERIAL_CON.write((recv_msg.id >> 8) & 0xFF);  // signal high
 		SERIAL_CON.write(recv_msg.id & 0xFF);         // signal low
 		SERIAL_CON.write(recv_msg.len);               // length
