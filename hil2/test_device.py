@@ -1,6 +1,7 @@
 from typing import Any, Optional
 
 import json
+import os
 import threading
 
 import cantools.database.can.database as cantools_db
@@ -22,10 +23,18 @@ class AdcConfig:
                 "5v_reference_v": v5r,
                 "24v_reference_v": v24r
             }:
-                self.bit_resolution = br
-                self.adc_reference_v = ar
-                self.five_v_reference_v = v5r
-                self.twenty_four_v_reference_v = v24r
+                self.bit_resolution: int = br
+                self.adc_reference_v: float = ar
+                self.five_v_reference_v: Optional[float] = v5r
+                self.twenty_four_v_reference_v: Optional[float] = v24r
+            case {
+                "bit_resolution": br,
+                "adc_reference_v": ar,
+            }:
+                self.bit_resolution: int = br
+                self.adc_reference_v: float = ar
+                self.five_v_reference_v: Optional[float] = None
+                self.twenty_four_v_reference_v: Optional[float] = None
             case _:
                 raise hil_errors.ConfigurationError("Invalid ADC configuration")
 
@@ -35,10 +44,18 @@ class AdcConfig:
         return (raw_value / (2 ** self.bit_resolution - 1)) * self.adc_reference_v
 
     def raw_to_5v(self, raw_value: int) -> float:
-        return (self.raw_to_v(raw_value) / self.five_v_reference_v) * 5.0
-    
+        match self.five_v_reference_v:
+            case None:
+                raise hil_errors.ConfigurationError("5V reference voltage not configured")
+            case v5r:
+                return (self.raw_to_v(raw_value) / v5r) * 5.0
+
     def raw_to_24v(self, raw_value: int) -> float:
-        return (self.raw_to_v(raw_value) / self.twenty_four_v_reference_v) * 24.0
+        match self.twenty_four_v_reference_v:
+            case None:
+                raise hil_errors.ConfigurationError("24V reference voltage not configured")
+            case v24r:
+                return (self.raw_to_v(raw_value) / v24r) * 24.0
 
 
 class DacConfig:
@@ -140,23 +157,23 @@ class TestDevice:
         muxs: dict[str, Mux],
         can_busses: dict[str, CanBus],
         adc_config: AdcConfig,
-        dac_config: DacConfig,
-        pot_config: PotConfig,
-        ser: serial_helper.ThreadedSerial
+        dac_config: Optional[DacConfig],
+        pot_config: Optional[PotConfig],
     ):
         self.hil_id: int = hil_id
-        self.name: str = name
-        self.ports: dict[str, Port] = ports
-        self.muxs: dict[str, Mux] = muxs
-        self.can_busses: dict[str, CanBus] = can_busses
-        self.adc_config: AdcConfig = adc_config
-        self.dac_config: DacConfig = dac_config
-        self.pot_config: PotConfig = pot_config
-        self.ser: serial_helper.ThreadedSerial = ser
+        self._name: str = name
+        self._ports: dict[str, Port] = ports
+        self._muxs: dict[str, Mux] = muxs
+        self._can_busses: dict[str, CanBus] = can_busses
+        self._adc_config: AdcConfig = adc_config
+        self._dac_config: Optional[DacConfig] = dac_config
+        self._pot_config: Optional[PotConfig] = pot_config
+
+        self._ser: Optional[serial_helper.ThreadedSerial] = None
 
         self.device_can_busses: dict[str, can_helper.CanMessageManager] = dict(map(
             lambda c: (c.name, can_helper.CanMessageManager()),
-            self.can_busses.values()
+            self._can_busses.values()
         ))
 
 
@@ -165,22 +182,36 @@ class TestDevice:
         cls,
         hil_id: int,
         name: str,
-        ser: serial_helper.ThreadedSerial,
         device_config_path: str
     ):
         with open(device_config_path, 'r') as device_config_path:
             device_config = json.load(device_config_path)
 
-        ports = dict(map(lambda p: (p.get("name"), Port(p)), device_config.get("ports")))
-        muxs = dict(map(lambda m: (m.get("name"), Mux(m)), device_config.get("muxs")))
+        ports = dict(map(lambda p: (p.get("name"), Port(p)), device_config.get("ports", [])))
+        muxs = dict(map(lambda m: (m.get("name"), Mux(m)), device_config.get("muxs", [])))
         can_busses = dict(map(
             lambda c: (c.get("name"), CanBus(c)),
-            device_config.get("can")
+            device_config.get("can", [])
         ))
         
-        adc_config = AdcConfig(device_config.get("adc_config"))
-        dac_config = DacConfig(device_config.get("dac_config"))
-        pot_config = PotConfig(device_config.get("pot_config"))
+        match device_config:
+            case { "adc_config": adc_config_data }:
+                adc_config = AdcConfig(adc_config_data)
+            case _:
+                error_msg = f"ADC configuration missing for device {name}"
+                raise hil_errors.ConfigurationError(error_msg)
+            
+        match device_config:
+            case { "dac_config": dac_config_data }:
+                dac_config = DacConfig(dac_config_data)
+            case _:
+                dac_config = None
+
+        match device_config:
+            case { "pot_config": pot_config_data }:
+                pot_config = PotConfig(pot_config_data)
+            case _:
+                pot_config = None
 
         return cls(
             hil_id,
@@ -191,12 +222,18 @@ class TestDevice:
             adc_config,
             dac_config,
             pot_config,
-            ser
         )
     
+    def set_serial(self, ser: serial_helper.ThreadedSerial) -> None:
+        self._ser = ser
+    
     def close(self) -> None:
-        # TODO: close all ports
-        self.ser.stop()
+        match self._ser:
+            case None:
+                error_msg = f"Cannot close TestDevice {self._name}: serial not set"
+                raise hil_errors.EngineError(error_msg)
+            case ser:
+                ser.stop()
     
     def _select_mux(self, mux_select: MuxSelect) -> None:
         for i, p in enumerate(mux_select.mux.select_ports):
@@ -205,58 +242,111 @@ class TestDevice:
         self._set_ao(mux_select.mux.port, mux_select)
     
     def _set_do(self, pin: int, value: bool) -> None:
-        commands.write_gpio(self.ser, pin, value)
+        match self._ser:
+            case None:
+                error_msg = f"Cannot set DO on TestDevice {self._name}: serial not set"
+                raise hil_errors.EngineError(error_msg)
+            case ser:
+                commands.write_gpio(ser, pin, value)
 
     def _hiZ_do(self, pin: int) -> None:
-        commands.read_gpio(self.ser, pin)
+        match self._ser:
+            case None:
+                error_msg = f"Cannot set HiZ DO on TestDevice {self._name}: serial not set"
+                raise hil_errors.EngineError(error_msg)
+            case ser:
+                commands.hiZ_gpio(ser, pin)
 
     def _get_di(self, pin: int) -> bool:
-        return commands.read_gpio(self.ser, pin)
+        match self._ser:
+            case None:
+                error_msg = f"Cannot get DI on TestDevice {self._name}: serial not set"
+                raise hil_errors.EngineError(error_msg)
+            case ser:
+                return commands.read_gpio(ser, pin)
 
     def _set_ao(self, pin: int, value: float) -> None:
-        raw_value = self.dac_config.v_to_raw(value)
-        commands.write_dac(self.ser, pin, raw_value)
-    
+        match (self._ser, self._dac_config):
+            case (ser, dac_config) if ser is not None and dac_config is not None:
+                raw_value = dac_config.v_to_raw(value)
+                commands.write_dac(ser, pin, raw_value)
+            case _:
+                error_msg = f"Cannot set AO on TestDevice {self._name}: serial or DAC config not set"
+                raise hil_errors.EngineError(error_msg)
+
     def _hiZ_ao(self, pin: int) -> None:
-        commands.hiZ_dac(self.ser, pin)
-    
+        match self._ser:
+            case None:
+                error_msg = f"Cannot set HiZ AO on TestDevice {self._name}: serial not set"
+                raise hil_errors.EngineError(error_msg)
+            case ser:
+                commands.hiZ_dac(ser, pin)
+
     def _get_ai(self, pin: int, mode: str) -> float:
-        raw_value = commands.read_adc(self.ser, pin)
+        match self._ser:
+            case None:
+                error_msg = f"Cannot get AI on TestDevice {self._name}: serial not set"
+                raise hil_errors.EngineError(error_msg)
+            case ser:
+                raw_value = commands.read_adc(ser, pin)
+
         if mode == 'AI5':
-            return self.adc_config.raw_to_5v(raw_value)
+            return self._adc_config.raw_to_5v(raw_value)
         elif mode == 'AI24':
-            return self.adc_config.raw_to_24v(raw_value)
+            return self._adc_config.raw_to_24v(raw_value)
         elif mode == 'AI':
-            return self.adc_config.raw_to_v(raw_value)
+            return self._adc_config.raw_to_v(raw_value)
         else:
             raise ValueError(f"Unsupported AI mode: {mode}")
 
     def _set_pot(self, pin: int, value: float) -> None:
-        raw_value = self.pot_config.ohms_to_raw(value)
-        commands.write_pot(self.ser, pin, raw_value)
+        match (self._ser, self._pot_config):
+            case (ser, pot_config) if ser is not None and pot_config is not None:
+                raw_value = pot_config.ohms_to_raw(value)
+                commands.write_pot(ser, pin, raw_value)
+            case _:
+                error_msg = f"Cannot set POT on TestDevice {self._name}: serial not set"
+                raise hil_errors.EngineError(error_msg)
 
     def _update_can_messages(self, bus: int, can_dbc: cantools_db.Database) -> None:
-        self.device_can_busses[bus].add_multiple(
-            commands.parse_can_messages(self.ser, bus, can_dbc)
-        )
+        match self._ser:
+            case None:
+                error_msg = (
+                    f"Cannot update CAN messages on TestDevice {self._name}: "
+                    "serial not set"
+                )
+                raise hil_errors.EngineError(error_msg)
+            case ser:
+                self.device_can_busses[bus].add_multiple(
+                    commands.parse_can_messages(ser, bus, can_dbc)
+                )
 
     def _send_can(
         self, bus: int, signal: str | int, data: dict, can_dbc: cantools_db.Database
     ) -> None:
         raw_data = list(can_dbc.encode_message(signal, data))
         msg_id = can_dbc.get_message_by_name(signal).frame_id
-        commands.send_can(self.ser, bus, msg_id, raw_data)
+
+        match self._ser:
+            case None:
+                error_msg = (
+                    f"Cannot send CAN message on TestDevice {self._name}: "
+                    "serial not set"
+                )
+                raise hil_errors.EngineError(error_msg)
+            case ser:
+                commands.send_can(ser, bus, msg_id, raw_data)
 
     def do_action(self, action_type: action.ActionType, port: str) -> Any:
-        maybe_port = self.ports.get(port, None)
+        maybe_port = self._ports.get(port, None)
         maybe_mux_select = next(
             (
-                val for m in self.muxs.values()
+                val for m in self._muxs.values()
                 if (val := m.select_from_name(port)) is not None
             ),
             None,
         )
-        maybe_can_bus = self.can_busses.get(port, None)
+        maybe_can_bus = self._can_busses.get(port, None)
 
         match (action_type, maybe_port, maybe_mux_select, maybe_can_bus):
             # Set DO + direct port
@@ -328,7 +418,7 @@ class TestDevice:
             case _:
                 error_msg = (
                     f"Action {type(action)} not supported for "
-                    f"port {port} on device {self.name}"
+                    f"port {port} on device {self._name}"
                 )
                 raise hil_errors.EngineError(error_msg)
 
@@ -339,43 +429,54 @@ class TestDeviceManager:
 
     @classmethod
     def from_json(
-        cls, test_config_path: str, device_config_path: str
+        cls, test_config_path: str, device_config_fpath: str
     ) -> 'TestDeviceManager':
         with open(test_config_path, 'r') as test_config_file:
             test_config = json.load(test_config_file)
 
-        hil_ids = list(map(
-            lambda device: device.get("id"),
-            test_config.get("hil_devices")
-        ))
+        hil_ids = []
+        stop_events = {}
+        test_devices = {}
+        match test_config:
+            case { "hil_devices": hil_devices }:
+                for device in hil_devices:
+                    match device:
+                        case {
+                            "id": hil_id,
+                            "name": name,
+                            "config": config_file_name
+                        } if not hil_id in hil_ids:
+                            hil_ids.append(hil_id)
+                            stop_events[hil_id] = threading.Event()
+                            test_devices[name] = TestDevice.from_json(
+                                hil_id,
+                                name,
+                                os.path.join(device_config_fpath, config_file_name)
+                            )
+                        case { "id": hil_id }:
+                            error_msg = f"Duplicate HIL device ID found: {hil_id}"
+                            raise hil_errors.ConfigurationError(error_msg)
+                        case _:
+                            error_msg = f"Invalid HIL device configuration: {device}"
+                            raise hil_errors.ConfigurationError(error_msg)
+            case _:
+                error_msg = "Invalid test configuration: missing 'hil_devices' key"
+                raise hil_errors.ConfigurationError(error_msg)
+
         hil_devices = serial_helper.discover_devices(hil_ids)
 
-        stop_events = dict(map(
-            lambda device: (device.get("id"), threading.Event()),
-            test_config.get("hil_devices")
-        ))
-
         sers = dict(map(
-            lambda device: (device.get("id"), serial_helper.ThreadedSerial(
-                hil_devices[device.get("id")],
-                stop_events[device.get("id")]
+            lambda hil_id: (hil_id, serial_helper.ThreadedSerial(
+                hil_devices[hil_id],
+                stop_events[hil_id]
             )),
-            test_config.get("hil_devices")
+            hil_ids
         ))
-
-        for ser in sers.values():
+        for test_device in test_devices.values():
+            ser = sers[test_device.hil_id]
             t = threading.Thread(target=ser.run)
             t.start()
-        
-        test_devices = dict(map(
-            lambda device: (device.get("name"), TestDevice.from_json(
-                device.get("id"),
-                device.get("name"),
-                hil_devices[device.get("id")],
-                device_config_path
-            )),
-            test_config.get("hil_devices")
-        ))
+            test_device.set_serial(ser)
         
         return cls(test_devices)
     
