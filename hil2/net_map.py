@@ -1,5 +1,7 @@
 import csv
 
+import hil_errors
+
 
 class BoardNet:
 	def __init__(self, board: str, net: str):
@@ -45,14 +47,24 @@ class NetMap:
         with open(file_path, newline='', encoding='utf-8') as net_map_file:
             reader = csv.DictReader(net_map_file)
             for row in reader:
-                entry = NetMapEntry(
-                    board=row['Board'],
-                    net=row['Net'],
-                    component=row['Component'],
-                    designator=int(row['Designator']),
-                    connector_name=row['Connector Name']
-                )
-                board_net = board_net.BoardNet(entry.board, entry.net)
-                entries[board_net] = entry
+                match row:
+                    case {
+                        'Board': board,
+                        'Net': net,
+                        'Component': component,
+                        'Designator': designator_str,
+                        'Connector Name': connector_name
+                    }:
+                        entry = NetMapEntry(
+                            board=board,
+                            net=net,
+                            component=component,
+                            designator=int(designator_str),
+                            connector_name=connector_name
+                        )
+                        board_net = BoardNet(entry.board, entry.net)
+                        entries[board_net] = entry
+                    case _:
+                        raise hil_errors.NetMapParseError(f"Invalid net map row: {row}")
         return cls(entries)
 
