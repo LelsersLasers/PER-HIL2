@@ -36,10 +36,10 @@ def discover_devices(hil_ids: list[int]) -> dict[int, serial.Serial]:
             xonxoff=0,
             rtscts=0
         )
-        serial_con.setDTR(False)
+        serial_con.dtr = False
         time.sleep(1)
-        serial_con.flushInput()
-        serial_con.setDTR(True)
+        serial_con.reset_input_buffer()
+        serial_con.dtr = True
 
         for _ in range(SERIAL_RETRIES):
             read_hil_id = commands.read_id(serial_con)
