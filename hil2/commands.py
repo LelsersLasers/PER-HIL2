@@ -3,6 +3,7 @@ from typing import Optional
 import cantools.database.can.database as cantools_db
 
 import can_helper
+import hil_errors
 import serial_helper
 
 
@@ -14,7 +15,11 @@ HIZ_DAC    = 4 # command, pin/offset        -> []
 READ_ADC   = 5 # command, pin               -> READ_ADC, value high, value low
 WRITE_POT  = 6 # command, pin/offset, value -> []
 SEND_CAN   = 7 # command, bus, signal high, signal low, length, data (8 bytes) -> []
+RECV_CAN   = 8 # <async>                    -> CAN_MESSAGE, bus, signal high,
+               #                               signal low, length, data (length bytes)
 ERROR      = 9 # <async/any>                -> ERROR, command
+
+SERIAL_RESPONSES = [READ_ID, READ_GPIO, READ_ADC, RECV_CAN, ERROR]
 
 
 def read_id(ser: serial_helper.ThreadedSerial) -> Optional[int]:
@@ -26,7 +31,7 @@ def read_id(ser: serial_helper.ThreadedSerial) -> Optional[int]:
 		case [read_hil_id]:
 			return read_hil_id
 		case _:
-			raise ValueError("Failed to read HIL ID, expected 1 byte")
+			raise hil_errors.EngineError("Failed to read HIL ID, expected 1 byte")
 
 def write_gpio(ser: serial_helper.ThreadedSerial, pin: int, value: bool) -> None:
 	command = [WRITE_GPIO, pin, int(value)]
@@ -37,11 +42,11 @@ def read_gpio(ser: serial_helper.ThreadedSerial, pin: int) -> bool:
 	ser.write(bytearray(command))
 	match ser.get_readings_with_timeout(READ_GPIO):
 		case None:
-			raise ValueError("Failed to read GPIO value, expected 1 byte")
+			raise hil_errors.SerialError("Failed to read GPIO value, no response")
 		case [read_value]:
 			return bool(read_value)
 		case _:
-			raise ValueError("Failed to read GPIO value, expected 1 byte")
+			raise hil_errors.EngineError("Failed to read GPIO value, expected 1 byte")
 
 def write_dac(ser: serial_helper.ThreadedSerial, pin: int, raw_value: int) -> None:
 	command = [WRITE_DAC, pin, raw_value]
@@ -56,20 +61,16 @@ def read_adc(ser: serial_helper.ThreadedSerial, pin: int) -> int:
 	ser.write(bytearray(command))
 	match ser.get_readings_with_timeout(READ_ADC):
 		case None:
-			raise ValueError("Failed to read ADC value, expected 2 bytes")
+			raise hil_errors.SerialError("Failed to read ADC value, no response")
 		case [read_value_high, read_value_low]:
 			return (read_value_high << 8) | read_value_low
 		case _:
-			raise ValueError("Failed to read ADC value, expected 2 bytes")
-	
+			raise hil_errors.EngineError("Failed to read ADC value, expected 2 bytes")
+
 def write_pot(ser: serial_helper.ThreadedSerial, pin: int, raw_value: int) -> None:
 	command = [WRITE_POT, pin, raw_value]
 	ser.write(bytearray(command))
 
-	if len(data) > 8:
-		raise ValueError("CAN data length must be 8 bytes or less")
-	if signal < 0 or signal >= (2 ** 11 - 2 ** 4):
-		raise ValueError("CAN signal out of range (0 to 2031)")
 def send_can(
 	ser: serial_helper.ThreadedSerial, bus: int, signal: int, data: list[int],
 ) -> None:
@@ -123,7 +124,8 @@ def parse_readings(
 			])
 			return True, remaining
 		case [ERROR, command, *rest]:
-			print(f"!! Error command received: {command}")
-			return True, rest
+			raise hil_errors.SerialError(f"HIL reported error for command {command}")
+		case [first, *rest] if first not in SERIAL_RESPONSES:
+			raise hil_errors.SerialError(f"Unexpected response {first}")
 		case _:
 			return False, readings

@@ -7,6 +7,11 @@ import serial
 import serial.tools.list_ports
 
 import commands
+import hil_errors
+
+SERIAL_BAUDRATE = 115200
+SERIAL_TIMEOUT = 0.1
+SERIAL_RETRIES = 5
 
 
 def discover_devices(hil_ids: list[int]) -> dict[int, serial.Serial]:
@@ -20,8 +25,8 @@ def discover_devices(hil_ids: list[int]) -> dict[int, serial.Serial]:
 	for cp in com_ports:
 		serial_con = serial.Serial(
 			cp,
-			115200,
-			timeout=0.1,
+			SERIAL_BAUDRATE,
+			timeout=SERIAL_TIMEOUT,
 			bytesize=serial.EIGHTBITS,
 			parity=serial.PARITY_NONE,
 			stopbits=serial.STOPBITS_ONE,
@@ -32,8 +37,8 @@ def discover_devices(hil_ids: list[int]) -> dict[int, serial.Serial]:
 		time.sleep(1)
 		serial_con.flushInput()
 		serial_con.setDTR(True)
-		
-		for _ in range(5):
+
+		for _ in range(SERIAL_RETRIES):
 			read_hil_id = commands.read_id(serial_con)
 			if read_hil_id is not None and read_hil_id in hil_ids:
 				devices[read_hil_id] = serial_con
@@ -45,9 +50,11 @@ def discover_devices(hil_ids: list[int]) -> dict[int, serial.Serial]:
 
 	for hil_id in hil_ids:
 		if hil_id not in devices:
-			raise ValueError(f"Failed to discover HIL device with ID {hil_id} on any port")
-	
+			error_msg = f"Failed to discover HIL device with ID {hil_id} on any port"
+			raise hil_errors.SerialError(error_msg)
+
 	return devices
+
 
 class ThreadedSerial:
 	def __init__(self, serial_con: serial.Serial, stop_event: threading.Event):

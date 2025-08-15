@@ -9,17 +9,29 @@ import action
 import can_helper
 import commands
 import dut_cons
+import hil_errors
 import serial_helper
 
 
 class AdcConfig:
 	def __init__(self, adc_config: dict):
-		self.bit_resolution: int = adc_config.get("bit_resolution")
-		self.adc_reference_v: float = adc_config.get("adc_reference_v")
-		self.five_v_reference_v: float = adc_config.get("5v_reference_v")
-		self.twenty_four_v_reference_v: float = adc_config.get("24v_reference_v")
+		match adc_config:
+			case {
+				"bit_resolution": br,
+				"adc_reference_v": ar,
+				"5v_reference_v": v5r,
+				"24v_reference_v": v24r
+			}:
+				self.bit_resolution = br
+				self.adc_reference_v = ar
+				self.five_v_reference_v = v5r
+				self.twenty_four_v_reference_v = v24r
+			case _:
+				raise hil_errors.ConfigurationError("Invalid ADC configuration")
 
 	def raw_to_v(self, raw_value: int) -> float:
+		if raw_value < 0 or raw_value >= (2 ** self.bit_resolution - 1):
+			raise hil_errors.RangeError(f"ADC raw value {raw_value} out of range")
 		return (raw_value / (2 ** self.bit_resolution - 1)) * self.adc_reference_v
 
 	def raw_to_5v(self, raw_value: int) -> float:
@@ -31,37 +43,65 @@ class AdcConfig:
 
 class DacConfig:
 	def __init__(self, dac_config: dict):
-		self.bit_resolution: int = dac_config.get("bit_resolution")
-		self.reference_v: float = dac_config.get("reference_v")
+		match dac_config:
+			case { "bit_resolution": br,"reference_v": rv }:
+				self.bit_resolution = br
+				self.reference_v = rv
+			case _:
+				raise hil_errors.ConfigurationError("Invalid DAC configuration")
 
 	def v_to_raw(self, value: float) -> int:
+		if value < 0 or value > self.reference_v:
+			raise hil_errors.RangeError(f"DAC value {value} out of range")
 		return int((value / self.reference_v) * (2 ** self.bit_resolution - 1))
 
 
 class PotConfig:
 	def __init__(self, pot_config: dict):
-		self.bit_resolution: int = pot_config.get("bit_resolution")
-		self.reference_ohms: float = pot_config.get("reference_ohms")
-		self.wiper_ohms: float = pot_config.get("wiper_ohms")
+		match pot_config:
+			case {
+				"bit_resolution": br,
+				"reference_ohms": r,
+				"wiper_ohms": w
+			}:
+				self.bit_resolution = br
+				self.reference_ohms = r
+				self.wiper_ohms = w
+			case _:
+				raise hil_errors.ConfigurationError("Invalid POT configuration")
 
 	def ohms_to_raw(self, value: float) -> int:
+		if value < self.wiper_ohms or value > self.reference_ohms + self.wiper_ohms:
+			raise hil_errors.RangeError(f"POT value {value} out of range")
 		steps = self.bit_resolution ** 2  - 1
 		return int((steps * (value - self.wiper_ohms)) / self.reference_ohms)
 
 
 class Port:
 	def __init__(self, port: dict):
-		self.name: str = port.get("name")
-		self.port: int = port.get("port")
-		self.mode: str = port.get("mode")
-
+		match port:
+			case { "name": name, "port": port, "mode": mode }:
+				self.name: str = name
+				self.port: int = port
+				self.mode: str = mode
+			case _:
+				raise hil_errors.ConfigurationError("Invalid Port configuration")
 
 class Mux:
 	def __init__(self, mux: dict):
-		self.name: str = mux.get("name")
-		self.mode: str = mux.get("mode")
-		self.select_ports: list[int] = mux.get("select_ports")
-		self.port: int = mux.get("port")
+		match mux:
+			case {
+				"name": name,
+				"mode": mode,
+				"select_ports": select_ports,
+				"port": port
+			}:
+				self.name: str = name
+				self.mode: str = mode
+				self.select_ports: list[int] = select_ports
+				self.port: int = port
+			case _:
+				raise hil_errors.ConfigurationError("Invalid Mux configuration")
 
 	def select_from_name(self, name: str) -> Optional['MuxSelect']:
 		"""Note: returns None when the name does not match."""
@@ -84,8 +124,12 @@ class MuxSelect:
 
 class CanBus:
 	def __init__(self, can_bus: dict):
-		self.name: str = can_bus.get("name")
-		self.bus: int = can_bus.get("bus")
+		match can_bus:
+			case {"name": name, "bus": bus}:
+				self.name: str = name
+				self.bus: int = bus
+			case _:
+				raise hil_errors.ConfigurationError("Invalid CAN Bus configuration")
 
 
 class TestDevice:
@@ -129,7 +173,10 @@ class TestDevice:
 
 		ports = dict(map(lambda p: (p.get("name"), Port(p)), device_config.get("ports")))
 		muxs = dict(map(lambda m: (m.get("name"), Mux(m)), device_config.get("muxs")))
-		can_busses = dict(map(lambda c: (c.get("name"), CanBus(c)), device_config.get("can")))
+		can_busses = dict(map(
+			lambda c: (c.get("name"), CanBus(c)),
+			device_config.get("can")
+		))
 		
 		adc_config = AdcConfig(device_config.get("adc_config"))
 		dac_config = DacConfig(device_config.get("dac_config"))
@@ -267,12 +314,16 @@ class TestDevice:
 				self.device_can_busses[mcb.name].clear(signal)
 			# Unsupported action
 			case _:
-				raise ValueError(f"Action {type(action)} not supported for port {port} on device {self.name}")
+				error_msg = (
+					f"Action {type(action)} not supported for "
+					f"port {port} on device {self.name}"
+				)
+				raise hil_errors.EngineError(error_msg)
 
 
 class TestDeviceManager:
 	def __init__(self, test_devices: dict[str, TestDevice]):
-		self.test_devices: dict[str, TestDevice] = test_devices
+		self._test_devices: dict[str, TestDevice] = test_devices
 
 	@classmethod
 	def from_json(
@@ -316,19 +367,25 @@ class TestDeviceManager:
 		
 		return cls(test_devices)
 	
-		if board in self.test_devices:
 	def maybe_hil_con_from_net(
 		self, board: str, net: str
 	) -> Optional[dut_cons.HilDutCon]:
+		if board in self._test_devices:
 			return dut_cons.HilDutCon(board, net)
 		else:
 			return None
 
-		return self.test_devices[hil_dut_con.device].do_action(action_type, hil_dut_con.port)
-	
 	def do_action(
 		self, action_type: action.ActionType, hil_dut_con: dut_cons.HilDutCon
 	) -> Any:
+		if hil_dut_con.device in self._test_devices:
+			return self._test_devices[hil_dut_con.device].do_action(
+				action_type, hil_dut_con.port
+			)
+		else:
+			error_msg = f"Device {hil_dut_con.device} not found"
+			raise hil_errors.ConnectionError(error_msg)
+
 	def close(self) -> None:
-		for device in self.test_devices.values():
+		for device in self._test_devices.values():
 			device.close()
