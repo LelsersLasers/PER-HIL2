@@ -10,6 +10,7 @@ import action
 import can_helper
 import component
 import dut_cons
+import hil_errors
 import net_map
 import test_device
 
@@ -17,20 +18,32 @@ import test_device
 class Hil2:
     def __init__(self,
         test_config_path: str,
-        device_config_path: str,
-        net_map_path: str,
-        can_dbc_path: str
+        device_config_fpath: str,
+        net_map_path: Optional[str] = None,
+        can_dbc_path: Optional[str] = None,
     ):
-        self._net_map: net_map.NetMap = net_map.NetMap.from_csv(net_map_path)
         self._test_device_manager: test_device.TestDeviceManager = (
             test_device.TestDeviceManager.from_json(
-                test_config_path, device_config_path
+                test_config_path, device_config_fpath
             )
         )
         self._dut_cons: dut_cons.DutCons = dut_cons.DutCons.from_json(test_config_path)
-        self._can_dbc: cantools_db.Database = cantools.db.load_file(
-            os.path.join(can_dbc_path)
-        )
+
+        match net_map_path:
+            case None:
+                self._maybe_net_map: Optional[net_map.NetMap] = None
+            case path_str:
+                self._maybe_net_map: Optional[net_map.NetMap] = net_map.NetMap.from_csv(
+                    path_str
+                )
+        
+        match can_dbc_path:
+            case None:
+                self._can_dbc: Optional[cantools_db.Database] = None
+            case path_str:
+                self._can_dbc: Optional[cantools_db.Database] = cantools.db.load_file(
+                    os.path.join(can_dbc_path)
+                )
 
         self._shutdown_components: dict[
             net_map.BoardNet, component.ShutdownableComponent
@@ -45,16 +58,30 @@ class Hil2:
 
     def _map_to_hil_device_con(self, board: str, net: str) -> dut_cons.HilDutCon:
         maybe_hil_dut_con = self._test_device_manager.maybe_hil_con_from_net(board, net)
-        match maybe_hil_dut_con:
-            case None:
-                net_map_entry = self._net_map.get_entry(board, net)
+        match (self._maybe_net_map, maybe_hil_dut_con):
+            case (None, None):
+                error_msg = (
+                    "No HIL device connection found for board/net, and no "
+                    "net map available to resolve: "
+                    f"({board}, {net})"
+                )
+                raise hil_errors.ConnectionError(error_msg)
+            case (None, hil_dut_con):
+                return hil_dut_con
+            case (net_map, None):
+                net_map_entry = net_map.get_entry(board, net)
                 dut_con = dut_cons.DutCon(
                     net_map_entry.connector_name, net_map_entry.designator
                 )
                 return self._dut_cons.get_hil_device_connection(board, dut_con)
-            case hil_dut_con:
-                return hil_dut_con
-            
+            case _:
+                error_msg = (
+                    "Multiple methods to resolve HIL device connection for "
+                    "board/net found; ambiguous: "
+                    f"({board}, {net})"
+                )
+                raise hil_errors.ConnectionError(error_msg)
+
     # DO ------------------------------------------------------------------------------#
     def set_do(self, board: str, net: str, value: bool) -> None:
         _ = self.do(board, net)  # Ensure component is registered to shutdown
@@ -139,34 +166,50 @@ class Hil2:
     def send_can(
         self, hil_board: str, can_bus: str, signal: str | int, data: dict
     ) -> None:
-        self._test_device_manager.do_action(
-            action.SendCan(signal, data, self._can_dbc),
-            self._test_device_manager.maybe_hil_con_from_net(hil_board, can_bus)
-        )
+        match self._can_dbc:
+            case None:
+                raise hil_errors.ConfigurationError("CAN DBC not configured")
+            case can_dbc:
+                self._test_device_manager.do_action(
+                    action.SendCan(signal, data, can_dbc),
+                    self._test_device_manager.maybe_hil_con_from_net(hil_board, can_bus)
+                )
 
     def get_last_can(
         self, hil_board: str, can_bus: str, signal: Optional[str | int] = None
     ) -> Optional[can_helper.CanMessage]:
-        return self._test_device_manager.do_action(
-            action.GetLastCan(signal, self._can_dbc),
-            self._test_device_manager.maybe_hil_con_from_net(hil_board, can_bus)
-        )
-    
+        match self._can_dbc:
+            case None:
+                raise hil_errors.ConfigurationError("CAN DBC not configured")
+            case can_dbc:
+                return self._test_device_manager.do_action(
+                    action.GetLastCan(signal, can_dbc),
+                    self._test_device_manager.maybe_hil_con_from_net(hil_board, can_bus)
+                )
+
     def get_all_can(
         self, hil_board: str, can_bus: str, signal: Optional[str | int] = None
     ) -> list[can_helper.CanMessage]:
-        return self._test_device_manager.do_action(
-            action.GetAllCan(signal, self._can_dbc),
+        match self._can_dbc:
+            case None:
+                raise hil_errors.ConfigurationError("CAN DBC not configured")
+            case can_dbc:
+                return self._test_device_manager.do_action(
+                    action.GetAllCan(signal, can_dbc),
             self._test_device_manager.maybe_hil_con_from_net(hil_board, can_bus)
         )
     
     def clear_can(
         self, hil_board: str, can_bus: str, signal: Optional[str | int] = None
     ) -> None:
-        self._test_device_manager.do_action(
-            action.ClearCan(signal, self._can_dbc),
-            self._test_device_manager.maybe_hil_con_from_net(hil_board, can_bus)
-        )
+        match self._can_dbc:
+            case None:
+                raise hil_errors.ConfigurationError("CAN DBC not configured")
+            case can_dbc:
+                self._test_device_manager.do_action(
+                    action.ClearCan(signal, can_dbc),
+                    self._test_device_manager.maybe_hil_con_from_net(hil_board, can_bus)
+                )
 
     def can(self, hil_board: str, can_bus: str) -> component.CAN:
         return component.CAN(
