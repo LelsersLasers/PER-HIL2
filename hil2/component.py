@@ -54,6 +54,8 @@ class DI:
     def get(self) -> bool:
         """
         Gets the digital input value.
+
+        :return: The digital input value
         """
         return self._get_fn()
 
@@ -102,6 +104,8 @@ class AI:
     def get(self) -> float:
         """
         Gets the analog input value.
+
+        :return: The analog input value in volts.
         """
         return self._get_fn()
 
