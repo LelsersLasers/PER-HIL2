@@ -1,6 +1,7 @@
 from typing import Optional
 
 import os
+import signal
 
 import cantools
 import cantools.database.can.database as cantools_db
@@ -22,14 +23,19 @@ class Hil2:
 	):
 		self._net_map: net_map.NetMap = net_map.NetMap.from_csv(net_map_path)
 		self._test_device_manager: test_device.TestDeviceManager = (
-            test_device.TestDeviceManager.from_json(
-                test_config_path, device_config_path
-            )
-        )
+			test_device.TestDeviceManager.from_json(
+				test_config_path, device_config_path
+			)
+		)
 		self._dut_cons: dut_cons.DutCons = dut_cons.DutCons.from_json(test_config_path)
 		self._can_dbc: cantools_db.Database = cantools.db.load_file(
 			os.path.join(can_dbc_path)
 		)
+		
+		signal.signal(signal.SIGINT, self._handle_interrupt)
+
+	def _handle_interrupt(self, _signum, _frame) -> None:
+		self._test_device_manager.close()
 
 	def _map_to_hil_device_con(self, board: str, net: str) -> dut_cons.HilDutCon:
 		maybe_hil_dut_con = self._test_device_manager.maybe_hil_con_from_net(board, net)
@@ -125,7 +131,7 @@ class Hil2:
 		)
 
 	def get_last_can(
-        self, hil_board: str, can_bus: str, signal: Optional[str | int] = None
+		self, hil_board: str, can_bus: str, signal: Optional[str | int] = None
 	) -> Optional[can_helper.CanMessage]:
 		return self._test_device_manager.do_action(
 			action.GetLastCan(signal, self._can_dbc),
@@ -141,7 +147,7 @@ class Hil2:
 		)
 	
 	def clear_can(
-        self, hil_board: str, can_bus: str, signal: Optional[str | int] = None
+		self, hil_board: str, can_bus: str, signal: Optional[str | int] = None
 	) -> None:
 		self._test_device_manager.do_action(
 			action.ClearCan(signal, self._can_dbc),
