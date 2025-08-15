@@ -30,4 +30,7 @@ class CanMessageManager:
 		if signal is None:
 			self.messages.clear()
 		else:
-			self.messages = list(filter(lambda msg: msg.signal != signal, self.messages))
+			self.messages = list(filter(
+				lambda msg: msg.signal != signal,
+				self.messages
+			))

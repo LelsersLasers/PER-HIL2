@@ -193,7 +193,9 @@ class TestDevice:
 			commands.parse_can_messages(self.ser, bus, can_dbc)
 		)
 
-	def send_can(self, bus: int, signal: str | int, data: dict, can_dbc: cantools_db.Database) -> None:
+	def send_can(
+		self, bus: int, signal: str | int, data: dict, can_dbc: cantools_db.Database
+	) -> None:
 		raw_data = list(can_dbc.encode_message(signal, data))
 		msg_id = can_dbc.get_message_by_name(signal).frame_id
 		commands.send_can(self.ser, bus, msg_id, raw_data)
@@ -201,7 +203,10 @@ class TestDevice:
 	def do_action(self, action_type: action.ActionType, port: str) -> Any:
 		maybe_port = self.ports.get(port, None)
 		maybe_mux_select = next(
-			(val for m in self.muxs.values() if (val := m.select_from_name(port)) is not None),
+			(
+				val for m in self.muxs.values()
+				if (val := m.select_from_name(port)) is not None
+			),
 			None,
 		)
 		maybe_can_bus = self.can_busses.get(port, None)
@@ -270,7 +275,9 @@ class TestDeviceManager:
 		self.test_devices: dict[str, TestDevice] = test_devices
 
 	@classmethod
-	def from_json(cls, test_config_path: str, device_config_path: str) -> 'TestDeviceManager':
+	def from_json(
+		cls, test_config_path: str, device_config_path: str
+	) -> 'TestDeviceManager':
 		with open(test_config_path, 'r') as test_config_file:
 			test_config = json.load(test_config_file)
 
@@ -309,15 +316,19 @@ class TestDeviceManager:
 		
 		return cls(test_devices)
 	
-	def maybe_hil_con_from_net(self, board: str, net: str) -> Optional[dut_cons.HilDutCon]:
 		if board in self.test_devices:
+	def maybe_hil_con_from_net(
+		self, board: str, net: str
+	) -> Optional[dut_cons.HilDutCon]:
 			return dut_cons.HilDutCon(board, net)
 		else:
 			return None
 
-	def do_action(self, action_type: action.ActionType, hil_dut_con: dut_cons.HilDutCon) -> Any:
 		return self.test_devices[hil_dut_con.device].do_action(action_type, hil_dut_con.port)
 	
+	def do_action(
+		self, action_type: action.ActionType, hil_dut_con: dut_cons.HilDutCon
+	) -> Any:
 	def close(self) -> None:
 		for device in self.test_devices.values():
 			device.close()

@@ -71,14 +71,18 @@ class ThreadedSerial:
 	def _process_readings(self):
 		processed = True
 		while processed:
-			processed, self.readings = commands.parse_readings(self.readings, self.parsed_readings, self.parsed_can_messages)
+			processed, self.readings = commands.parse_readings(
+				self.readings, self.parsed_readings, self.parsed_can_messages
+			)
 
 	def _get_readings(self, command: int) -> Optional[list[int]]:
 		with self.lock:
 			val = self.parsed_readings.pop(command, None)
 			return val
 		
-	def get_readings_with_timeout(self, command: int, timeout: float = 0.1, sleep_interval = 0.01) -> Optional[list[int]]:
+	def get_readings_with_timeout(
+        self, command: int, timeout: float = 0.1, sleep_interval = 0.01
+	) -> Optional[list[int]]:
 		deadline = time.time() + timeout
 		while time.time() < deadline:
 			if (reading := self._get_readings(command)) is not None:

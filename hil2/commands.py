@@ -14,7 +14,6 @@ HIZ_DAC    = 4 # command, pin/offset        -> []
 READ_ADC   = 5 # command, pin               -> READ_ADC, value high, value low
 WRITE_POT  = 6 # command, pin/offset, value -> []
 SEND_CAN   = 7 # command, bus, signal high, signal low, length, data (8 bytes) -> []
-RECV_CAN   = 8 # <async>                    -> CAN_MESSAGE, bus, signal high, signal low, length, data (length bytes)
 ERROR      = 9 # <async/any>                -> ERROR, command
 
 
@@ -67,11 +66,13 @@ def write_pot(ser: serial_helper.ThreadedSerial, pin: int, raw_value: int) -> No
 	command = [WRITE_POT, pin, raw_value]
 	ser.write(bytearray(command))
 
-def send_can(ser: serial_helper.ThreadedSerial, bus: int, signal: int, data: list[int]) -> None:
 	if len(data) > 8:
 		raise ValueError("CAN data length must be 8 bytes or less")
 	if signal < 0 or signal >= (2 ** 11 - 2 ** 4):
 		raise ValueError("CAN signal out of range (0 to 2031)")
+def send_can(
+	ser: serial_helper.ThreadedSerial, bus: int, signal: int, data: list[int],
+) -> None:
 	signal_high = (signal >> 8) & 0xFF
 	signal_low = signal & 0xFF
 	length = len(data)
@@ -93,6 +94,7 @@ def parse_can_messages(
         for signal, data in [((values[1] << 8) | values[2], values[4:4 + values[3]])]
     ]
 
+
 def parse_readings(
 	readings: list[int],
 	parsed_readings: dict[int, list[int]],
@@ -110,11 +112,15 @@ def parse_readings(
 		case [READ_ADC, value_high, value_low, *rest]:
 			parsed_readings[READ_ADC] = [value_high, value_low]
 			return True, rest
-		case [RECV_CAN, bus, signal_high, signal_low, length, *rest] if len(rest) >= length:
+		case [
+			RECV_CAN, bus, signal_high, signal_low, length, *rest
+		] if len(rest) >= length:
 			data, remaining = rest[:length], rest[length:]
 			if bus not in parsed_can_messages:
 				parsed_can_messages[bus] = []
-			parsed_can_messages[bus].append([bus, signal_high, signal_low, length, *data])
+			parsed_can_messages[bus].append([
+				bus, signal_high, signal_low, length, *data
+			])
 			return True, remaining
 		case [ERROR, command, *rest]:
 			print(f"!! Error command received: {command}")
