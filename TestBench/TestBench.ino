@@ -24,13 +24,15 @@ const int TESTER_ID = 1;
 //----------------------------------------------------------------------------//
 
 // Digipot conf --------------------------------------------------------------//
-#define DIGIPOT_1_WIRE Wire1
-#define DIGIPOT_1_SDA 25
-#define DIGIPOT_1_SCL 16
+#define NUM_DIGIPOTS 2
 
-#define DIGIPOT_2_WIRE Wire2
-#define DIGIPOT_2_SDA 18
-#define DIGIPOT_2_SCL 19
+#define DIGIPOT_0_WIRE Wire1
+#define DIGIPOT_0_SDA 25
+#define DIGIPOT_0_SCL 16
+
+#define DIGIPOT_1_WIRE Wire2
+#define DIGIPOT_1_SDA 18
+#define DIGIPOT_1_SCL 19
 
 const uint8_t DIGIPOT_MAX_STEPS = 128;
 const float DIGIPOT_MAX_OHMS = 10000;
@@ -50,8 +52,10 @@ const float DIGIPOT_MAX_OHMS = 10000;
 Adafruit_MCP4706 dacs[NUM_DACS];
 bool dac_power_down[NUM_DACS];
 
-MCP4017 digipot1(DIGIPOT_MAX_STEPS, DIGIPOT_MAX_OHMS); // pin/offset: 1
-MCP4017 digipot2(DIGIPOT_MAX_STEPS, DIGIPOT_MAX_OHMS); // pin/offset: 2
+MCP4017 digipots[NUM_DIGIPOTS] = {
+  MCP4017(DIGIPOT_MAX_STEPS, DIGIPOT_MAX_OHMS),
+  MCP4017(DIGIPOT_MAX_STEPS, DIGIPOT_MAX_OHMS) 
+};
 
 FlexCAN_T4<CAN1, CAN_RX, CAN_TX> vCan; // bus: 1
 FlexCAN_T4<CAN3, CAN_RX, CAN_TX> mCan; // bus: 2
@@ -109,13 +113,13 @@ void setup() {
 	}
 
 	// Digipot setup
+	DIGIPOT_0_WIRE.setSDA(DIGIPOT_0_SDA);
+	DIGIPOT_0_WIRE.setSCL(DIGIPOT_0_SCL);
+    digipots[0].begin(MCP4017ADDRESS, DIGIPOT_0_WIRE);
+
 	DIGIPOT_1_WIRE.setSDA(DIGIPOT_1_SDA);
 	DIGIPOT_1_WIRE.setSCL(DIGIPOT_1_SCL);
-	digipot1.begin(MCP4017ADDRESS, DIGIPOT_1_WIRE);
-
-	DIGIPOT_2_WIRE.setSDA(DIGIPOT_2_SDA);
-	DIGIPOT_2_WIRE.setSCL(DIGIPOT_2_SCL);
-	digipot2.begin(MCP4017ADDRESS, DIGIPOT_2_WIRE);
+    digipots[1].begin(MCP4017ADDRESS, DIGIPOT_1_WIRE);
 
 	// CAN setup
 	vCan.begin();
@@ -203,13 +207,13 @@ void loop() {
 		case SerialCommand::WRITE_POT: {
 			uint8_t offset = g_serial_data[1];
 			uint8_t value = g_serial_data[2];
-			if (offset == 1) {
-				digipot1.setSteps(value);
-			} else if (offset == 2) {
-				digipot2.setSteps(value);
-			} else {
-				send_error(command);
-			}
+
+            if (offset >= NUM_DIGIPOTS) {
+                send_error(command);
+                break;
+            }
+
+            digipots[offset].setSteps(value);
 			break;
 		}
 		case SerialCommand::SEND_CAN: {

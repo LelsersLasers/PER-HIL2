@@ -38,8 +38,8 @@
         { "port":206, "name":"DAC7", "mode": "AO", "notes":"5V 8-bit DAC" },
         { "port":207, "name":"DAC8", "mode": "AO", "notes":"5V 8-bit DAC" },
 
-        { "port":1, "name":"POT1", "mode": "POT", "notes":"10k Ω 7-bit Digipot" },
-        { "port":2, "name":"POT2", "mode": "POT", "notes":"10k Ω 7-bit Digipot" }
+        { "port":0, "name":"POT1", "mode": "POT", "notes":"10k Ω 7-bit Digipot" },
+        { "port":1, "name":"POT2", "mode": "POT", "notes":"10k Ω 7-bit Digipot" }
     ],
 
     "can": [
