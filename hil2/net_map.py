@@ -4,7 +4,16 @@ import hil_errors
 
 
 class BoardNet:
+    """
+    Represents a board/net combination in the net map (ex: 'Dashboard/BRK_STAT').
+    Can be used as a key in a dictionary.
+    """
+
     def __init__(self, board: str, net: str):
+        """
+        :param board: The name of the board (ex: 'Dashboard')
+        :param net: The name of the net (ex: 'BRK_STAT')
+        """
         self._board: str = board
         self._net: str = net
 
@@ -13,19 +22,24 @@ class BoardNet:
 
     def __eq__(self, other):
         return self._board == other.board and self._net == other.net
-    
+
     def __neq__(self, other):
         return not (self == other)
 
 
 class NetMapEntry:
-    def __init__(self,
-        board: str,
-        net: str,
-        component: str,
-        designator: int,
-        connector_name: str
+    """Represents a row in the net map CSV file."""
+
+    def __init__(
+        self, board: str, net: str, component: str, designator: int, connector_name: str
     ):
+        """
+        :param board: The name of the board (ex: 'Dashboard')
+        :param net: The name of the net (ex: 'BRK_STAT')
+        :param component: The name of the component (ex: 'J3')
+        :param designator: The designator number (ex: 9)
+        :param connector_name: What board this net connects to (ex: 'MAIN')
+        """
         self.board = board
         self.net = net
         self.component = component
@@ -35,36 +49,54 @@ class NetMapEntry:
 
 class NetMap:
     def __init__(self, entries: dict[BoardNet, NetMapEntry]):
+        """
+        :param entries: A dictionary mapping board/net combinations to their net map entries
+        """
         self._entries: dict[BoardNet, NetMapEntry] = entries
 
     def get_entry(self, board: str, net: str) -> NetMapEntry:
-        board_net = board_net.BoardNet(board, net)
-        return self._entries[board_net]
+        """
+        Retrieves a net map entry by board and net name.
+
+        :param board: The name of the board (ex: 'Dashboard')
+        :param net: The name of the net (ex: 'BRK_STAT')
+        :return: The net map entry for the specified board and net
+        """
+        board_net = BoardNet(board, net)
+        if board_net in self._entries:
+            return self._entries[board_net]
+        else:
+            raise hil_errors.ConnectionError(f"No net map entry found for: {board_net}")
 
     @classmethod
-    def from_csv(cls, file_path: str) -> 'NetMap':
+    def from_csv(cls, file_path: str) -> "NetMap":
+        """
+        Creates a NetMap instance from a CSV file.
+
+        :param file_path: The path to the CSV file
+        :return: A NetMap instance
+        """
         entries = {}
-        with open(file_path, newline='', encoding='utf-8') as net_map_file:
+        with open(file_path, newline="", encoding="utf-8") as net_map_file:
             reader = csv.DictReader(net_map_file)
             for row in reader:
                 match row:
                     case {
-                        'Board': board,
-                        'Net': net,
-                        'Component': component,
-                        'Designator': designator_str,
-                        'Connector Name': connector_name
+                        "Board": board,
+                        "Net": net,
+                        "Component": component,
+                        "Designator": designator_str,
+                        "Connector Name": connector_name,
                     }:
                         entry = NetMapEntry(
                             board=board,
                             net=net,
                             component=component,
                             designator=int(designator_str),
-                            connector_name=connector_name
+                            connector_name=connector_name,
                         )
                         board_net = BoardNet(entry.board, entry.net)
                         entries[board_net] = entry
                     case _:
                         raise hil_errors.NetMapParseError(f"Invalid net map row: {row}")
         return cls(entries)
-
