@@ -107,7 +107,7 @@ class Hil2:
                     net_map_entry.component, net_map_entry.designator
                 )
                 return self._dut_cons.get_hil_device_connection(board, dut_con)
-            case (_, hil_dut_con):
+            case (None, hil_dut_con):
                 return hil_dut_con
             case _:
                 error_msg = (

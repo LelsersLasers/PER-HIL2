@@ -1,5 +1,7 @@
 from typing import Optional
 
+import logging
+
 import cantools.database.can.database as cantools_db
 
 import can_helper
@@ -36,11 +38,13 @@ def read_id(ser: serial_helper.ThreadedSerial) -> Optional[int]:
     """
 
     command = [READ_ID]
+    logging.debug(f"Sending - READ_ID: {command}")
     ser.write(bytearray(command))
     match ser.get_readings_with_timeout(READ_ID):
         case None:
             return None
         case [read_hil_id]:
+            logging.debug(f"Received - READ_ID: {read_hil_id}")
             return read_hil_id
         case _:
             raise hil_errors.EngineError("Failed to read HIL ID, expected 1 byte")
@@ -56,6 +60,7 @@ def write_gpio(ser: serial_helper.ThreadedSerial, pin: int, value: bool) -> None
     :param value: The value to write (low = false, high = true).
     """
     command = [WRITE_GPIO, pin, int(value)]
+    logging.debug(f"Sending - WRITE_GPIO: {command}")
     ser.write(bytearray(command))
 
 
@@ -70,11 +75,13 @@ def read_gpio(ser: serial_helper.ThreadedSerial, pin: int) -> bool:
     """
 
     command = [READ_GPIO, pin]
+    logging.debug(f"Sending - READ_GPIO: {command}")
     ser.write(bytearray(command))
     match ser.get_readings_with_timeout(READ_GPIO):
         case None:
             raise hil_errors.SerialError("Failed to read GPIO value, no response")
         case [read_value]:
+            logging.debug(f"Received - READ_GPIO: {read_value}")
             return bool(read_value)
         case _:
             raise hil_errors.EngineError("Failed to read GPIO value, expected 1 byte")
@@ -90,6 +97,7 @@ def write_dac(ser: serial_helper.ThreadedSerial, pin: int, raw_value: int) -> No
     :param raw_value: The raw value to write (0-255).
     """
     command = [WRITE_DAC, pin, raw_value]
+    logging.debug(f"Sending - WRITE_DAC: {command}")
     ser.write(bytearray(command))
 
 
@@ -102,6 +110,7 @@ def hiZ_dac(ser: serial_helper.ThreadedSerial, pin: int) -> None:
     :param pin: The DAC pin number.
     """
     command = [HIZ_DAC, pin]
+    logging.debug(f"Sending - HIZ_DAC: {command}")
     ser.write(bytearray(command))
 
 
@@ -116,11 +125,13 @@ def read_adc(ser: serial_helper.ThreadedSerial, pin: int) -> int:
     """
 
     command = [READ_ADC, pin]
+    logging.debug(f"Sending - READ_ADC: {command}")
     ser.write(bytearray(command))
     match ser.get_readings_with_timeout(READ_ADC):
         case None:
             raise hil_errors.SerialError("Failed to read ADC value, no response")
         case [read_value_high, read_value_low]:
+            logging.debug(f"Received - READ_ADC: {read_value_high}, {read_value_low}")
             return (read_value_high << 8) | read_value_low
         case _:
             raise hil_errors.EngineError("Failed to read ADC value, expected 2 bytes")
@@ -136,6 +147,7 @@ def write_pot(ser: serial_helper.ThreadedSerial, pin: int, raw_value: int) -> No
     :param raw_value: The raw value to write (0-255).
     """
     command = [WRITE_POT, pin, raw_value]
+    logging.debug(f"Sending - WRITE_POT: {command}")
     ser.write(bytearray(command))
 
 
@@ -159,6 +171,7 @@ def send_can(
     length = len(data)
     padding = [0] * (8 - len(data))
     command = [SEND_CAN, bus, signal_high, signal_low, length, *data, *padding]
+    logging.debug(f"Sending - SEND_CAN: {command}")
     ser.write(bytearray(command))
 
 
@@ -204,17 +217,23 @@ def parse_readings(
         case []:
             return False, []
         case [READ_ID, value, *rest]:
+            logging.debug(f"Parsed - READ_ID: {value}")
             parsed_readings[READ_ID] = [value]
             return True, rest
         case [READ_GPIO, value, *rest]:
+            logging.debug(f"Parsed - READ_GPIO: {value}")
             parsed_readings[READ_GPIO] = [value]
             return True, rest
         case [READ_ADC, value_high, value_low, *rest]:
+            logging.debug(f"Parsed - READ_ADC: {value_high}, {value_low}")
             parsed_readings[READ_ADC] = [value_high, value_low]
             return True, rest
         case [RECV_CAN, bus, signal_high, signal_low, length, *rest] if (
             len(rest) >= length
         ):
+            logging.debug(
+                f"Parsed - RECV_CAN: {bus}, {signal_high}, {signal_low}, {length}"
+            )
             data, remaining = rest[:length], rest[length:]
             if bus not in parsed_can_messages:
                 parsed_can_messages[bus] = []
@@ -223,8 +242,10 @@ def parse_readings(
             )
             return True, remaining
         case [ERROR, command, *rest]:
+            logging.critical(f"Parsed - ERROR for command: {command}. Rest={rest}")
             raise hil_errors.SerialError(f"HIL reported error for command {command}")
         case [first, *rest] if first not in SERIAL_RESPONSES:
+            logging.critical(f"Unexpected response: {first}. Rest={rest}")
             raise hil_errors.SerialError(f"Unexpected response. Command error: {first}")
         case _:
             return False, readings

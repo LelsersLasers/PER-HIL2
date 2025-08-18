@@ -1,5 +1,6 @@
 from typing import Optional
 
+import logging
 import threading
 import time
 
@@ -37,6 +38,7 @@ def discover_devices(hil_ids: list[int]) -> dict[int, serial.Serial]:
 
     # For every serial port, try to see if it is a HIL device
     for cp in com_ports:
+        logging.debug(f"Trying to discover HIL device on port {cp}")
         serial_con = serial.Serial(
             cp,
             SERIAL_BAUDRATE,
@@ -57,7 +59,9 @@ def discover_devices(hil_ids: list[int]) -> dict[int, serial.Serial]:
             read_hil_id = commands.read_id(serial_con)
             if read_hil_id is not None and read_hil_id in hil_ids:
                 devices[read_hil_id] = serial_con
-                print(f"Discovered HIL device with ID {read_hil_id} on port {cp}")
+                logging.info(
+                    f"Discovered HIL device with ID {read_hil_id} on port {cp}"
+                )
                 break
             time.sleep(1)
         else:
