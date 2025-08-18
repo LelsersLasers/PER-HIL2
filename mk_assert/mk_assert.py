@@ -8,6 +8,8 @@ import print_helper
 # Global test state -------------------------------------------------------------------#
 g_tests: list["TestFn"] = []
 g_active_test: Optional["ActiveTestContext"] = None
+g_setup_fn: Optional[Callable[[], None]] = None
+g_teardown_fn: Optional[Callable[[], None]] = None
 
 
 class TestFn:
@@ -52,6 +54,16 @@ class ActiveTestContext:
         self.failed += 1
 
 
+def set_setup_fn(setup_fn: Callable[[], None]) -> None:
+    global g_setup_fn
+    g_setup_fn = setup_fn
+
+
+def set_teardown_fn(teardown_fn: Callable[[], None]) -> None:
+    global g_teardown_fn
+    g_teardown_fn = teardown_fn
+
+
 def add_test(func, *args, run_now: bool = False, **kwargs):
     global g_tests
 
@@ -65,6 +77,12 @@ def add_test(func, *args, run_now: bool = False, **kwargs):
 
 def run_single_test(test_fn: TestFn) -> None:
     with ActiveTestContext(test_fn) as active_test:
+        if g_setup_fn is not None:
+            logging.debug(
+                f"Running setup function before test: {test_fn.func.__name__}"
+            )
+            g_setup_fn()
+
         logging.debug(f"Running test: {test_fn.func.__name__}")
 
         print_helper.print_test_start(test_fn.func.__name__)
@@ -74,6 +92,12 @@ def run_single_test(test_fn: TestFn) -> None:
             active_test.passed,
             active_test.failed,
         )
+
+        if g_teardown_fn is not None:
+            logging.debug(
+                f"Running teardown function after test: {test_fn.func.__name__}"
+            )
+            g_teardown_fn()
 
 
 def run_tests():
