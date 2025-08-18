@@ -11,12 +11,16 @@ def do_test(h: hil2.Hil2):
     mka.assert_true(val, "DI@28 should be True after setting DO@2 to True")
 
 
-
 def main():
-    h = hil2.Hil2("./tests/example/config.json", "device_configs", "netmap.csv", "can.dbc")
-    mka.add_test(do_test, h)
+    with hil2.Hil2(
+        "./tests/example/config.json",
+        "device_configs",
+        "netmap.csv",
+        "can.dbc",
+    ) as h:
+        mka.add_test(do_test, h)
 
-    mka.run_tests()
+        mka.run_tests()
 
     # v_bat = h.ao("Main_Module", "VBatt")
     # v_bat.set(3.2)
@@ -26,7 +30,6 @@ def main():
     # val = h.get_ao("Main_Module", "VBatt")
 
     # h.get_last_can("HIL2", "MCAN", "Signal")
-    
 
     # mcan = h.can("HIL2", "MCAN")
     # mcan.send("Signal", {})
@@ -39,6 +42,7 @@ def main():
     # mcan.clear("Signal")
     # mcan.clear(23)
     # mcan.clear()
+
 
 if __name__ == "__main__":
     main()

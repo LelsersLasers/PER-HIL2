@@ -1,7 +1,7 @@
 from typing import Optional
 
+import logging
 import os
-import signal
 
 import cantools
 import cantools.database.can.database as cantools_db
@@ -58,17 +58,26 @@ class Hil2:
             net_map.BoardNet, component.ShutdownableComponent
         ] = {}
 
-        # Capture the control-c signal to make sure we gracefully exit
-        signal.signal(signal.SIGINT, self._handle_interrupt)
+    # Context -------------------------------------------------------------------------#
+    def __enter__(self):
+        return self
 
-    # Close ---------------------------------------------------------------------------#
-    def _handle_interrupt(self, _signum, _frame) -> None:
+    def __exit__(self, exc_type, exc_value, _traceback):
+        if exc_type is not None:
+            logging.critical(f"Hil2 exiting due to exception: {exc_value}")
+
+        self.close()
+        self._test_device_manager.close()
+        return False
+
+    # Soft close ----------------------------------------------------------------------#
+    def close(self) -> None:
         """
-        Handle the interrupt signal (Ctrl+C) by shutting down components.
+        'Shutdown' all the componets (hiZ currently configured outputs)
         """
         for comp in self._shutdown_components.values():
             comp.shutdown()
-        self._test_device_manager.close()
+        self._shutdown_components.clear()
 
     # Map -----------------------------------------------------------------------------#
     def _map_to_hil_device_con(self, board: str, net: str) -> dut_cons.HilDutCon:
