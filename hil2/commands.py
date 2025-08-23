@@ -217,23 +217,23 @@ def parse_readings(
              - The remaining unparsed readings.
     """
 
+    logging.debug(f"Current readings to parse: {readings}")
     match readings:
         case []:
             return False, []
-        case [READ_ID, value, *rest]:
+        case [cmd, value, *rest] if cmd == READ_ID:
             logging.debug(f"Parsed - READ_ID: {value}")
             parsed_readings[READ_ID] = [value]
             return True, rest
-        case [READ_GPIO, value, *rest]:
             logging.debug(f"Parsed - READ_GPIO: {value}")
             parsed_readings[READ_GPIO] = [value]
             return True, rest
-        case [READ_ADC, value_high, value_low, *rest]:
+        case [cmd, value_high, value_low, *rest] if cmd == READ_ADC:
             logging.debug(f"Parsed - READ_ADC: {value_high}, {value_low}")
             parsed_readings[READ_ADC] = [value_high, value_low]
             return True, rest
-        case [RECV_CAN, bus, signal_high, signal_low, length, *rest] if (
-            len(rest) >= length
+        case [cmd, bus, signal_high, signal_low, length, *rest] if (
+            cmd == RECV_CAN and len(rest) >= length
         ):
             logging.debug(
                 f"Parsed - RECV_CAN: {bus}, {signal_high}, {signal_low}, {length}"
@@ -245,7 +245,7 @@ def parse_readings(
                 [bus, signal_high, signal_low, length, *data]
             )
             return True, remaining
-        case [ERROR, command, *rest]:
+        case [cmd, command, *rest] if cmd == ERROR:
             logging.critical(f"Parsed - ERROR for command: {command}. Rest={rest}")
             raise hil_errors.SerialError(f"HIL reported error for command {command}")
         case [first, *rest] if first not in SERIAL_RESPONSES:
