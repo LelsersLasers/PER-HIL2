@@ -185,6 +185,16 @@ def assert_true(cond: bool, msg: str = "", negate: bool = False):
 
     print_helper.print_assert(msg, cond != negate)
 
+def assert_false(cond: bool, msg: str = "", negate: bool = False):
+    """
+    Assert that a condition is false (or true if negate is True).
+
+    :param cond: The condition to check.
+    :param msg: An optional message to display with the assertion result.
+    :param negate: If True, assert that the condition is true.
+    """
+    assert_true(not cond, msg, negate)
+
 
 def assert_eqf(a: float, b: float, tol: float, msg: str = "", negate: bool = False):
     """
