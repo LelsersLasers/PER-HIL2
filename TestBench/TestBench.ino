@@ -259,7 +259,7 @@ void loop() {
         SERIAL_CON.write(recv_msg.buf, recv_msg.len); // g_serial_data
     } else if (mCan.read(recv_msg)) {
         SERIAL_CON.write(RECV_CAN);
-        SERIAL_CON.write(MCAN_BUS)                    // bus 2
+        SERIAL_CON.write(MCAN_BUS);                   // bus 2
         SERIAL_CON.write((recv_msg.id >> 8) & 0xFF);  // signal high
         SERIAL_CON.write(recv_msg.id & 0xFF);         // signal low
         SERIAL_CON.write(recv_msg.len);               // length
