@@ -6,12 +6,12 @@ import threading
 
 import cantools.database.can.database as cantools_db
 
-import action
-import can_helper
-import commands
-import dut_cons
-import hil_errors
-import serial_helper
+from . import action
+from . import can_helper
+from . import commands
+from . import dut_cons
+from . import hil_errors
+from . import serial_helper
 
 
 # Peripheral configuration ------------------------------------------------------------#

@@ -1,6 +1,6 @@
 import csv
 
-import hil_errors
+from . import hil_errors
 
 
 # Board net pairing -------------------------------------------------------------------#

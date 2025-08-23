@@ -2,7 +2,7 @@ from typing import Callable, Any, Optional
 
 import logging
 
-import print_helper
+from . import print_helper
 
 
 # Global test state -------------------------------------------------------------------#

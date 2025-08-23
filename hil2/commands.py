@@ -4,9 +4,9 @@ import logging
 
 import cantools.database.can.database as cantools_db
 
-import can_helper
-import hil_errors
-import serial_helper
+from . import can_helper
+from . import hil_errors
+from . import serial_helper
 
 
 # Command constants -------------------------------------------------------------------#
