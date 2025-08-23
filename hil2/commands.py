@@ -85,8 +85,9 @@ def read_gpio(ser: serial_helper.ThreadedSerial, pin: int) -> bool:
         case [read_value]:
             logging.debug(f"Received - READ_GPIO: {read_value}")
             return bool(read_value)
-        case _:
-            raise hil_errors.EngineError("Failed to read GPIO value, expected 1 byte")
+        case x:
+            error_msg = f"Failed to read GPIO value, expected 1 byte: {x}"
+            raise hil_errors.EngineError(error_msg)
 
 
 def write_dac(ser: serial_helper.ThreadedSerial, pin: int, raw_value: int) -> None:
@@ -135,8 +136,9 @@ def read_adc(ser: serial_helper.ThreadedSerial, pin: int) -> int:
         case [read_value_high, read_value_low]:
             logging.debug(f"Received - READ_ADC: {read_value_high}, {read_value_low}")
             return (read_value_high << 8) | read_value_low
-        case _:
-            raise hil_errors.EngineError("Failed to read ADC value, expected 2 bytes")
+        case x:
+            error_msg = f"Failed to read ADC value, expected 2 bytes: {x}"
+            raise hil_errors.EngineError(error_msg)
 
 
 def write_pot(ser: serial_helper.ThreadedSerial, pin: int, raw_value: int) -> None:
