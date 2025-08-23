@@ -3,6 +3,7 @@ from typing import Optional
 import logging
 
 import cantools.database.can.database as cantools_db
+import serial
 
 from . import can_helper
 from . import hil_errors
@@ -28,26 +29,27 @@ SERIAL_RESPONSES = [READ_ID, READ_GPIO, READ_ADC, RECV_CAN, ERROR]
 
 
 # Simple commands ---------------------------------------------------------------------#
-def read_id(ser: serial_helper.ThreadedSerial) -> Optional[int]:
+def read_id(ser_raw: serial.Serial) -> Optional[int]:
     """
     Attempts to read the HIL ID from a device.
     Sends a READ_ID command and waits for a response.
 
-    :param ser: The serial connection to use.
+    :param ser_raw: The raw serial connection to use (raw Serial object).
     :return: The HIL ID if read successfully, None otherwise.
     """
-
     command = [READ_ID]
     logging.debug(f"Sending - READ_ID: {command}")
-    ser.write(bytearray(command))
-    match ser.get_readings_with_timeout(READ_ID):
-        case None:
+    ser_raw.write(bytearray(command))
+    try:
+        response = ser_raw.read(2)  # Read command byte and ID byte
+        if len(response) < 2 or response[0] != READ_ID:
             return None
-        case [read_hil_id]:
-            logging.debug(f"Received - READ_ID: {read_hil_id}")
-            return read_hil_id
-        case _:
-            raise hil_errors.EngineError("Failed to read HIL ID, expected 1 byte")
+        read_hil_id = response[1]
+        logging.debug(f"Received - READ_ID: {read_hil_id}")
+        return read_hil_id
+    except serial.SerialException as e:
+        logging.error(f"Serial exception occurred: {e}")
+        return None
 
 
 def write_gpio(ser: serial_helper.ThreadedSerial, pin: int, value: bool) -> None:
