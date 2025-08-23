@@ -12,17 +12,18 @@ from . import serial_helper
 
 # Command constants -------------------------------------------------------------------#
 # fmt: off
-READ_ID    = 0 # command                    -> READ_ID, id
-WRITE_GPIO = 1 # command, pin, value        -> []
-READ_GPIO  = 2 # command, pin               -> READ_GPIO, value
-WRITE_DAC  = 3 # command, pin/offset, value -> []
-HIZ_DAC    = 4 # command, pin/offset        -> []
-READ_ADC   = 5 # command, pin               -> READ_ADC, value high, value low
-WRITE_POT  = 6 # command, pin/offset, value -> []
-SEND_CAN   = 7 # command, bus, signal high, signal low, length, data (8 bytes) -> []
-RECV_CAN   = 8 # <async>                    -> CAN_MESSAGE, bus, signal high,
-               #                               signal low, length, data (length bytes)
-ERROR      = 9 # <async/any>                -> ERROR, command
+READ_ID    = 0  # command                    -> READ_ID, id
+WRITE_GPIO = 1  # command, pin, value        -> []
+HIZ_GPIO   = 2  # command, pin               -> []
+READ_GPIO  = 3  # command, pin               -> READ_GPIO, value
+WRITE_DAC  = 4  # command, pin/offset, value -> []
+HIZ_DAC    = 5  # command, pin/offset        -> []
+READ_ADC   = 6  # command, pin               -> READ_ADC, value high, value low
+WRITE_POT  = 7  # command, pin/offset, value -> []
+SEND_CAN   = 8  # command, bus, signal high, signal low, length, data (8 bytes) -> []
+RECV_CAN   = 9  # <async>                    -> CAN_MESSAGE, bus, signal high,
+                #                               signal low, length, data (length bytes)
+ERROR      = 10 # <async/any>                -> ERROR, command
 # fmt: on
 
 SERIAL_RESPONSES = [READ_ID, READ_GPIO, READ_ADC, RECV_CAN, ERROR]
@@ -63,6 +64,19 @@ def write_gpio(ser: serial_helper.ThreadedSerial, pin: int, value: bool) -> None
     """
     command = [WRITE_GPIO, pin, int(value)]
     logging.debug(f"Sending - WRITE_GPIO: {command}")
+    ser.write(bytearray(command))
+
+def hiZ_gpio(ser: serial_helper.ThreadedSerial, pin: int) -> None:
+    """
+    Set a GPIO pin to high impedance (HiZ).
+    (This is equivalent to setting the pin as an input.)
+    Sends a HIZ_GPIO command with the specified pin.
+
+    :param ser: The serial connection to use.
+    :param pin: The GPIO pin number.
+    """
+    command = [HIZ_GPIO, pin]
+    logging.debug(f"Sending - HIZ_GPIO: {command}")
     ser.write(bytearray(command))
 
 
@@ -225,6 +239,7 @@ def parse_readings(
             logging.debug(f"Parsed - READ_ID: {value}")
             parsed_readings[READ_ID] = [value]
             return True, rest
+        case [cmd, value, *rest] if cmd == READ_GPIO:
             logging.debug(f"Parsed - READ_GPIO: {value}")
             parsed_readings[READ_GPIO] = [value]
             return True, rest
