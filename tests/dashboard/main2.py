@@ -13,9 +13,10 @@ PEDAL_LOW_V = 0.5 # volts read when pedal is not pressed (in normal orientation)
 PEDAL_HIGH_V = 4.5 # volts read when pedal is fully pressed (in normal orientation)
 PEDAL_PERCENT_V = (PEDAL_HIGH_V - PEDAL_LOW_V) / 100.0
 
-SLEEP_TIME = 0.03 # seconds, how long to wait before checking a CAN message
+SLEEP_TIME = 0.01 # seconds, how long to wait before checking a CAN message
 
-MSG_NAME = "raw_throttle_brake" # note: motor "off" => throttle = 0
+PEDAL_MSG = "raw_throttle_brake" # note: motor "off" => throttle = 0
+SHOCK_MSG = "shock_front"
 
 
 # Helpers -----------------------------------------------------------------------------#
@@ -85,6 +86,28 @@ def check_uart(uart: hil2_comp.DI, test_prefix: str):
         time.sleep(0.01)
     mka.assert_true(False, f"{test_prefix}: UART activity detected")
 
+def float_range(start, stop, step):
+    while start <= stop:
+        yield start
+        start += step
+
+def shockpots_from_voltage(v_left: float, v_right: float) -> tuple[int, int]:
+    POT_VOLT_MAX = 3.0
+    POT_VOLT_MIN_L = 4082.0
+    POT_VOLT_MIN_R = 4090.0
+    POT_MAX_DIST = 75
+    POT_DIST_DROOP_L = 56
+    POT_DIST_DROOP_R = 56
+
+    adc_left = (v_left / POT_VOLT_MAX) * POT_VOLT_MIN_L
+    adc_right = (v_right / POT_VOLT_MAX) * POT_VOLT_MIN_R
+
+    shock_l = -1 * ((POT_MAX_DIST - int((adc_left / (POT_VOLT_MIN_L - POT_VOLT_MAX)) * POT_MAX_DIST)) - POT_DIST_DROOP_L)
+    shock_r = -1 * ((POT_MAX_DIST - int((adc_right / (POT_VOLT_MIN_R - POT_VOLT_MAX)) * POT_MAX_DIST)) - POT_DIST_DROOP_R)
+
+    return shock_l, shock_r
+
+
 # EV.4.7.2 ----------------------------------------------------------------------------#
 def ev_4_7_2_test(h: hil2.Hil2):
     """
@@ -109,7 +132,7 @@ def ev_4_7_2_test(h: hil2.Hil2):
     set_both(brk1, brk2, 0)
     set_both(thrtl1, thrtl2, 0)
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Setup")
+    msg = check_msg(vcan, PEDAL_MSG, "Setup")
     check_brakes(msg, 0, 0.1, "Setup")
     check_throttles(msg, 0, 0.1, "Setup")
     time.sleep(0.1)
@@ -119,7 +142,7 @@ def ev_4_7_2_test(h: hil2.Hil2):
     set_both(brk1, brk2, 5)
     set_both(thrtl1, thrtl2, 5)
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Brakes low, throttle low")
+    msg = check_msg(vcan, PEDAL_MSG, "Brakes low, throttle low")
     check_brakes(vcan, 5, 0.1, "Brakes low, throttle low")
     check_throttles(vcan, 5, 0.1, "Brakes low, throttle low")
     time.sleep(0.1)
@@ -129,7 +152,7 @@ def ev_4_7_2_test(h: hil2.Hil2):
     set_both(brk1, brk2, 50)
     set_both(thrtl1, thrtl2, 5)
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Brakes high, throttle low")
+    msg = check_msg(vcan, PEDAL_MSG, "Brakes high, throttle low")
     check_brakes(msg, 50, 0.1, "Brakes high, throttle low")
     check_throttles(msg, 5, 0.1, "Brakes high, throttle low")
     time.sleep(0.1)
@@ -139,7 +162,7 @@ def ev_4_7_2_test(h: hil2.Hil2):
     set_both(brk1, brk2, 50)
     set_both(thrtl1, thrtl2, 50)
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Brakes high, throttle high")
+    msg = check_msg(vcan, PEDAL_MSG, "Brakes high, throttle high")
     check_brakes(msg, 50, 0.1, "Brakes high, throttle high")
     check_throttles(msg, 0, 0.1, "Brakes high, throttle high")
     time.sleep(0.1)
@@ -148,14 +171,14 @@ def ev_4_7_2_test(h: hil2.Hil2):
     vcan.clear()
     set_both(brk1, brk2, 4)
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Brakes low, throttle mid")
+    msg = check_msg(vcan, PEDAL_MSG, "Brakes low, throttle mid")
     check_brakes(msg, 4, 0.1, "Brakes low, throttle mid")
 
     for p in range(50, 4, -1):
         vcan.clear()
         set_both(thrtl1, thrtl2, p)
         time.sleep(SLEEP_TIME)
-        msg = check_msg(vcan, MSG_NAME, f"Brakes low, throttle {p}")
+        msg = check_msg(vcan, PEDAL_MSG, f"Brakes low, throttle {p}")
         expected_throttle = 0 if p > 5 else p
         check_throttles(msg, expected_throttle, 0.1, f"Brakes low, throttle {p} (expected {expected_throttle}%)")
     
@@ -166,7 +189,7 @@ def ev_4_7_2_test(h: hil2.Hil2):
     set_both(brk1, brk2, 5)
     set_both(thrtl1, thrtl2, 25)
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Brakes low, throttle mid")
+    msg = check_msg(vcan, PEDAL_MSG, "Brakes low, throttle mid")
     check_brakes(msg, 5, 0.1, "Brakes low, throttle mid")
     check_throttles(msg, 25, 0.1, "Brakes low, throttle mid")
 
@@ -194,7 +217,7 @@ def t_4_2_5_test(h: hil2.Hil2):
     vcan.clear()
     set_both(thrtl1, thrtl2, 25)
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Set 1 - Similar")
+    msg = check_msg(vcan, PEDAL_MSG, "Set 1 - Similar")
     check_throttles(msg, 25, 0.1, "Set 1 - Similar")
     mka.assert_false(sdc.get(), "Set 1 - Similar: SDC not triggered")
     time.sleep(0.1)
@@ -204,7 +227,7 @@ def t_4_2_5_test(h: hil2.Hil2):
     thrtl1.set(pedal_percent_to_volts_1(20))
     thrtl2.set(pedal_percent_to_volts_2(25))
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Set 1 - Slightly different")
+    msg = check_msg(vcan, PEDAL_MSG, "Set 1 - Slightly different")
     check_throttles_diff(msg, 20, 25, 0.1, "Set 1 - Slightly different")
     mka.assert_false(sdc.get(), "Set 1 - Slightly different: SDC not triggered")
     time.sleep(0.1)
@@ -214,7 +237,7 @@ def t_4_2_5_test(h: hil2.Hil2):
     thrtl1.set(pedal_percent_to_volts_1(20))
     thrtl2.set(pedal_percent_to_volts_2(30))
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Set 1 - 10% different")
+    msg = check_msg(vcan, PEDAL_MSG, "Set 1 - 10% different")
     check_throttles_diff(msg, 20, 30, 0.1, "Set 1 - 10% different")
     mka.assert_false(sdc.get(), "Set 1 - 10% different: SDC not triggered")
     time.sleep(0.03)
@@ -224,7 +247,7 @@ def t_4_2_5_test(h: hil2.Hil2):
     thrtl1.set(pedal_percent_to_volts_1(25))
     thrtl2.set(pedal_percent_to_volts_2(30))
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Set 1 - Slightly different")
+    msg = check_msg(vcan, PEDAL_MSG, "Set 1 - Slightly different")
     check_throttles_diff(msg, 25, 30, 0.1, "Set 1 - Slightly different")
     mka.assert_false(sdc.get(), "Set 1 - Slightly different: SDC not triggered")
     time.sleep(0.1)
@@ -234,7 +257,7 @@ def t_4_2_5_test(h: hil2.Hil2):
     thrtl1.set(pedal_percent_to_volts_1(20))
     thrtl2.set(pedal_percent_to_volts_2(30))
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Set 1 - 10% different")
+    msg = check_msg(vcan, PEDAL_MSG, "Set 1 - 10% different")
     check_throttles_diff(msg, 20, 30, 0.1, "Set 1 - 10% different")
     mka.assert_false(sdc.get(), "Set 1 - 10% different: SDC not triggered")
     time.sleep(0.03)
@@ -242,7 +265,7 @@ def t_4_2_5_test(h: hil2.Hil2):
     # Still 10% different (~100 msec later), check motor off, sdc not triggered
     vcan.clear()
     time.sleep(0.07)
-    msg = check_msg(vcan, MSG_NAME, "Set 1 - Still 10% different (~100 msec later)")
+    msg = check_msg(vcan, PEDAL_MSG, "Set 1 - Still 10% different (~100 msec later)")
     check_throttles(msg, 0, 0.1, "Set 1 - Still 10% different (~100 msec later)")
     mka.assert_false(sdc.get(), "Set 1 - Still 10% different (~100 msec later): SDC not triggered")
     time.sleep(0.1)
@@ -254,7 +277,7 @@ def t_4_2_5_test(h: hil2.Hil2):
     vcan.clear()
     set_both(thrtl1, thrtl2, 20)
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Set 1 - Similar")
+    msg = check_msg(vcan, PEDAL_MSG, "Set 1 - Similar")
     check_throttles(msg, 20, 0.1, "Set 1 - Similar")
     mka.assert_false(sdc.get(), "Set 1 - Similar: SDC not triggered")
     time.sleep(0.1)
@@ -265,7 +288,7 @@ def t_4_2_5_test(h: hil2.Hil2):
     vcan.clear()
     set_both(thrtl1, thrtl2, 25)
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Set 2 - Similar")
+    msg = check_msg(vcan, PEDAL_MSG, "Set 2 - Similar")
     check_throttles(msg, 25, 0.1, "Set 2 - Similar")
     mka.assert_false(sdc.get(), "Set 2 - Similar: SDC not triggered")
     time.sleep(0.1)
@@ -275,7 +298,7 @@ def t_4_2_5_test(h: hil2.Hil2):
     thrtl1.set(pedal_percent_to_volts_1(25))
     thrtl2.set(pedal_percent_to_volts_2(20))
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Set 2 - Slightly different")
+    msg = check_msg(vcan, PEDAL_MSG, "Set 2 - Slightly different")
     check_throttles_diff(msg, 25, 20, 0.1, "Set 2 - Slightly different")
     mka.assert_false(sdc.get(), "Set 2 - Slightly different: SDC not triggered")
     time.sleep(0.1)
@@ -285,7 +308,7 @@ def t_4_2_5_test(h: hil2.Hil2):
     thrtl1.set(pedal_percent_to_volts_1(30))
     thrtl2.set(pedal_percent_to_volts_2(20))
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Set 2 - 10% different")
+    msg = check_msg(vcan, PEDAL_MSG, "Set 2 - 10% different")
     check_throttles_diff(msg, 30, 20, 0.1, "Set 2 - 10% different")
     mka.assert_false(sdc.get(), "Set 2 - 10% different: SDC not triggered")
     time.sleep(0.03)
@@ -295,7 +318,7 @@ def t_4_2_5_test(h: hil2.Hil2):
     thrtl1.set(pedal_percent_to_volts_1(30))
     thrtl2.set(pedal_percent_to_volts_2(25))
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Set 2 - Slightly different")
+    msg = check_msg(vcan, PEDAL_MSG, "Set 2 - Slightly different")
     check_throttles_diff(msg, 30, 25, 0.1, "Set 2 - Slightly different")
     mka.assert_false(sdc.get(), "Set 2 - Slightly different: SDC not triggered")
     time.sleep(0.1)
@@ -305,7 +328,7 @@ def t_4_2_5_test(h: hil2.Hil2):
     thrtl1.set(pedal_percent_to_volts_1(30))
     thrtl2.set(pedal_percent_to_volts_2(20))
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Set 2 - 10% different")
+    msg = check_msg(vcan, PEDAL_MSG, "Set 2 - 10% different")
     check_throttles_diff(msg, 30, 20, 0.1, "Set 2 - 10% different")
     mka.assert_false(sdc.get(), "Set 2 - 10% different: SDC not triggered")
     time.sleep(0.03)
@@ -313,7 +336,7 @@ def t_4_2_5_test(h: hil2.Hil2):
     # Still 10% different (~100 msec later), check motor off, sdc not triggered
     vcan.clear()
     time.sleep(0.07)
-    msg = check_msg(vcan, MSG_NAME, "Set 2 - Still 10% different (~100 msec later)")
+    msg = check_msg(vcan, PEDAL_MSG, "Set 2 - Still 10% different (~100 msec later)")
     check_throttles(msg, 0, 0.1, "Set 2 - Still 10% different (~100 msec later)")
     mka.assert_false(sdc.get(), "Set 2 - Still 10% different (~100 msec later): SDC not triggered")
     time.sleep(0.1)
@@ -325,7 +348,7 @@ def t_4_2_5_test(h: hil2.Hil2):
     vcan.clear()
     set_both(thrtl1, thrtl2, 20)
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Set 2 - Similar")
+    msg = check_msg(vcan, PEDAL_MSG, "Set 2 - Similar")
     check_throttles(msg, 20, 0.1, "Set 2 - Similar")
     mka.assert_false(sdc.get(), "Set 2 - Similar: SDC not triggered")
     time.sleep(0.1)
@@ -348,7 +371,7 @@ def t_4_2_10_test(h: hil2.Hil2):
     vcan.clear()
     set_both(thrtl1, thrtl2, 25)
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Both ok")
+    msg = check_msg(vcan, PEDAL_MSG, "Both ok")
     check_throttles(msg, 25, 0.1, "Both ok")
     mka.assert_false(sdc.get(), "Both ok: SDC not triggered")
     time.sleep(0.1)
@@ -358,7 +381,7 @@ def t_4_2_10_test(h: hil2.Hil2):
     thrtl1.set(5.5) # volts
     thrtl2.set(5.5) # volts
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Both out of range high")
+    msg = check_msg(vcan, PEDAL_MSG, "Both out of range high")
     check_throttles(msg, 0, 0.1, "Both out of range high")
     mka.assert_true(sdc.get(), "Both out of range high: SDC triggered")
     time.sleep(0.1)
@@ -370,7 +393,7 @@ def t_4_2_10_test(h: hil2.Hil2):
     vcan.clear()
     set_both(thrtl1, thrtl2, 20)
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Both ok")
+    msg = check_msg(vcan, PEDAL_MSG, "Both ok")
     check_throttles(msg, 20, 0.1, "Both ok")
     mka.assert_false(sdc.get(), "Both ok: SDC not triggered")
     time.sleep(0.1)
@@ -383,7 +406,7 @@ def t_4_2_10_test(h: hil2.Hil2):
     thrtl2.set(pedal_percent_to_volts_2(25))
     thrtl1.hiZ()
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Sens1 disconnected")
+    msg = check_msg(vcan, PEDAL_MSG, "Sens1 disconnected")
     check_throttles(msg, 0, 0.1, "Sens1 disconnected")
     mka.assert_true(sdc.get(), "Sens1 disconnected: SDC triggered")
     time.sleep(0.1)
@@ -395,7 +418,7 @@ def t_4_2_10_test(h: hil2.Hil2):
     vcan.clear()
     set_both(thrtl1, thrtl2, 20)
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Sens1 and sens2 ok")
+    msg = check_msg(vcan, PEDAL_MSG, "Sens1 and sens2 ok")
     check_throttles(msg, 20, 0.1, "Sens1 and sens2 ok")
     mka.assert_false(sdc.get(), "Sens1 and sens2 ok: SDC not triggered")
     time.sleep(0.1)
@@ -407,7 +430,7 @@ def t_4_2_10_test(h: hil2.Hil2):
     thrtl1.set(pedal_percent_to_volts_1(25))
     thrtl2.hiZ()
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Sens2 disconnected")
+    msg = check_msg(vcan, PEDAL_MSG, "Sens2 disconnected")
     check_throttles(msg, 0, 0.1, "Sens2 disconnected")
     mka.assert_true(sdc.get(), "Sens2 disconnected: SDC triggered")
     time.sleep(0.1)
@@ -419,7 +442,7 @@ def t_4_2_10_test(h: hil2.Hil2):
     vcan.clear()
     set_both(thrtl1, thrtl2, 20)
     time.sleep(SLEEP_TIME)
-    msg = check_msg(vcan, MSG_NAME, "Sens1 and sens2 ok")
+    msg = check_msg(vcan, PEDAL_MSG, "Sens1 and sens2 ok")
     check_throttles(msg, 20, 0.1, "Sens1 and sens2 ok")
     mka.assert_false(sdc.get(), "Sens1 and sens2 ok: SDC not triggered")
     time.sleep(0.1)
@@ -469,6 +492,34 @@ def buttons_test(h: hil2.Hil2):
     time.sleep(0.1)
 
 
+# Shockpot test -----------------------------------------------------------------------#
+def shockpot_test(h: hil2.Hil2):
+    """
+    DAC -> sweep 0 to 3v and check CAN values
+    Read can messages to check the values
+    """
+
+    left = h.ao("Dashboard", "LeftPot")
+    right = h.ao("Dashboard", "RightPot")
+    vcan = h.can("HIL2", "VCAN")
+
+    for lv in float_range(0, 3, 0.2):
+        left.set(lv)
+        for rv in float_range(0, 3, 0.2):
+            vcan.clear()
+            right.set(rv)
+            time.sleep(SLEEP_TIME)
+
+            msg = check_msg(vcan, SHOCK_MSG, f"Left {lv:.1f}V, Right {rv:.1f}V")
+            exp_l, exp_r = shockpots_from_voltage(lv, rv)
+            mka.assert_true(msg is not None, f"Left {lv:.1f}V, Right {rv:.1f}V: CAN message received")
+            mka.assert_true(msg is not None and msg["left_shock"] == exp_l, f"Left {lv:.1f}V, Right {rv:.1f}V: left shock {exp_l}")
+            mka.assert_true(msg is not None and msg["right_shock"] == exp_r, f"Left {lv:.1f}V, Right {rv:.1f}V: right shock {exp_r}")
+
+
+
+
+
 # Main --------------------------------------------------------------------------------#
 def main():
     logging.basicConfig(level=logging.DEBUG)
@@ -486,6 +537,7 @@ def main():
         mka.add_test(t_4_2_5_test, h)
         mka.add_test(t_4_2_10_test, h)
         mka.add_test(buttons_test, h)
+        mka.add_test(shockpot_test, h)
         
         mka.run_tests()
 
