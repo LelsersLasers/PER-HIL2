@@ -36,24 +36,15 @@ class Hil2:
             )
         )
         self._dut_cons: dut_cons.DutCons = dut_cons.DutCons.from_json(test_config_path)
-
-        match net_map_path:
-            case None:
-                self._maybe_net_map: Optional[net_map.NetMap] = None
-            case path_str:
-                self._maybe_net_map: Optional[net_map.NetMap] = net_map.NetMap.from_csv(
-                    path_str
-                )
-
-        match can_dbc_path:
-            case None:
-                self._can_dbc: Optional[cantools_db.Database] = None
-            case path_str:
-                self._can_dbc: Optional[cantools_db.Database] = cantools.db.load_file(
-                    os.path.join(can_dbc_path)
-                )
-
-        # Components that need to be "shut down" when HIL2 exits
+        self._maybe_net_map: Optional[net_map.NetMap] = (
+            None if net_map_path is None else net_map.NetMap.from_csv(net_map_path)
+        )
+        self._can_dbc: Optional[cantools_db.Database] = (
+            None
+            if can_dbc_path is None
+            else cantools.db.load_file(os.path.join(can_dbc_path))
+        )
+        # Components that need to be "shutdown" when HIL2 exits
         self._shutdown_components: dict[
             net_map.BoardNet, component.ShutdownableComponent
         ] = {}
