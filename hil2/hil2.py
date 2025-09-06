@@ -22,13 +22,14 @@ class Hil2:
         test_config_path: str,
         device_config_fpath: str,
         net_map_path: Optional[str] = None,
-        can_dbc_path: Optional[str] = None,
+        can_dbc_fpath: Optional[str] = None,
     ):
         """
         :param test_config_path: The path to the test configuration JSON file
         :param device_config_fpath: The path to the device configuration JSON folder
         :param net_map_path: The path to the net map (exported from Altium) file
-        :param can_dbc_path: The path to the CAN DBC file (optional)
+                             (optional)
+        :param can_dbc_path: The path to the CAN DBC folder (optional)
         """
         self._test_device_manager: test_device.TestDeviceManager = (
             test_device.TestDeviceManager.from_json(
@@ -41,8 +42,8 @@ class Hil2:
         )
         self._can_dbc: Optional[cantools_db.Database] = (
             None
-            if can_dbc_path is None
-            else cantools.db.load_file(os.path.join(can_dbc_path))
+            if can_dbc_fpath is None
+            else can_helper.load_can_dbcs(os.path.join(can_dbc_fpath))
         )
         # Components that need to be "shutdown" when HIL2 exits
         self._shutdown_components: dict[
