@@ -3,7 +3,6 @@ from typing import Optional
 import logging
 import os
 
-import cantools
 import cantools.database.can.database as cantools_db
 
 from . import action
