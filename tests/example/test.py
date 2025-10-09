@@ -45,26 +45,26 @@ def do_di_test(h: hil2.Hil2):
     #     print(f"Setting DO{i+1} LOW")
     #     do.set(False)
 
-    # for i in range(0, 10):
-    # set_all_do_low(h)
-    #     print("")
-    #     do = h.do("HIL2", f"DO{i+1}")
-    #     print(f"Setting DO{i+1} HIGH")
-    #     do.set(True)
-    #     input("Press Enter to continue...")
-    set_all_do_low(h)
-    input("Press Enter to continue...")
+    while True:
+        for i in range(0, 10):
+            set_all_do_low(h)
+            print("All DOs set to LOW")
+            input("Press Enter to continue...")
+            do = h.do("HIL2", f"DO{i+1}")
+            print(f"Setting DO{i+1} HIGH")
+            do.set(True)
+            input("Press Enter to continue...")
 
-    do = h.do("HIL2", f"DO5")
-    print(f"Setting DO5 HIGH")
-    do.set(True)
-    time.sleep(0.1)
-    input("Press Enter to continue...")
+    # do = h.do("HIL2", f"DO5")
+    # print(f"Setting DO5 HIGH")
+    # do.set(True)
+    # time.sleep(0.1)
+    # input("Press Enter to continue...")
 
-    print("Setting DO5 LOW")
-    do.set(False)
-    time.sleep(0.1)
-    input("Press Enter to continue...")
+    # print("Setting DO5 LOW")
+    # do.set(False)
+    # time.sleep(0.1)
+    # input("Press Enter to continue...")
 
     # input("Press Enter to continue...")
 
@@ -161,8 +161,8 @@ def main():
         None,
         None
     ) as h:
-        # mka.add_test(do_di_test, h)
-        mka.add_test(ao_ai_test, h)
+        mka.add_test(do_di_test, h)
+        # mka.add_test(ao_ai_test, h)
 
         mka.run_tests()
 
