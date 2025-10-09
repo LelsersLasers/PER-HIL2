@@ -31,22 +31,49 @@ def float_range(start, stop, step):
 #     vcan = h.can("HIL2", "VCAN")
 #     vcan.send("BrakeLeft", { "raw_reading": 12 })
 
-def do_di_test(h: hil2.Hil2):
-    # do = h.do("HIL2", "DO1")
-
-    for i in range(0, 8):
+def set_all_do_low(h: hil2.Hil2):
+    for i in range(0, 10):
         do = h.do("HIL2", f"DO{i+1}")
         print(f"Setting DO{i+1} LOW")
         do.set(False)
 
+def do_di_test(h: hil2.Hil2):
+    # do = h.do("HIL2", "DO1")
+
+    # for i in range(1, 11):
+    #     do = h.do("HIL2", f"DO{i+1}")
+    #     print(f"Setting DO{i+1} LOW")
+    #     do.set(False)
+
+    # for i in range(0, 10):
+    # set_all_do_low(h)
+    #     print("")
+    #     do = h.do("HIL2", f"DO{i+1}")
+    #     print(f"Setting DO{i+1} HIGH")
+    #     do.set(True)
+    #     input("Press Enter to continue...")
+    set_all_do_low(h)
     input("Press Enter to continue...")
 
-    do = h.do("HIL2", f"DO{4}")
-    print(f"Setting DO4 HIGH")
+    do = h.do("HIL2", f"DO5")
+    print(f"Setting DO5 HIGH")
     do.set(True)
     time.sleep(0.1)
-
     input("Press Enter to continue...")
+
+    print("Setting DO5 LOW")
+    do.set(False)
+    time.sleep(0.1)
+    input("Press Enter to continue...")
+
+    # input("Press Enter to continue...")
+
+    # do = h.do("HIL2", f"DO{4}")
+    # print(f"Setting DO4 HIGH")
+    # do.set(True)
+    # time.sleep(0.1)
+
+    # input("Press Enter to continue...")
 
 
     # print("Setting DO4 LOW")
@@ -88,11 +115,17 @@ def ao_ai_test(h: hil2.Hil2):
         print(f"Setting DAC{i+1} to 0.0V")
         ao.set(0.0)
 
+    input("Press Enter to continue...")
+
     for i in range(0, 8):
         ao = h.ao("HIL2", f"DAC{i+1}")
         print(f"Setting DAC{i+1} to 2.5V")
         ao.set(2.5)
-        input("Press Enter to continue...")
+        # input("Press Enter to continue...")
+
+    input("Press Enter to continue...")
+
+    ao_ai_test(h)
             
 
 
