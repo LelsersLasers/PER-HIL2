@@ -161,8 +161,8 @@ def main():
         None,
         None
     ) as h:
-        mka.add_test(do_di_test, h)
-        # mka.add_test(ao_ai_test, h)
+        # mka.add_test(do_di_test, h)
+        mka.add_test(ao_ai_test, h)
 
         mka.run_tests()
 
