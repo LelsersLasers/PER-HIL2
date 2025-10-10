@@ -200,7 +200,7 @@ void loop() {
     // dacs[offset].setVoltage(value);
     // break;
 
-    for (int i = 0; i < NUM_DACS; i++) {
+    for (int i = 0; i < 1; i++) {
         if (dac_power_down[i]) {
             dacs[i].setMode(MCP4706_AWAKE);
             dac_power_down[i] = false;
