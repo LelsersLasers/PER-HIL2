@@ -45,15 +45,25 @@ def do_di_test(h: hil2.Hil2):
     #     print(f"Setting DO{i+1} LOW")
     #     do.set(False)
 
-    while True:
-        for i in range(0, 10):
-            set_all_do_low(h)
-            print("All DOs set to LOW")
-            input("Press Enter to continue...")
-            do = h.do("HIL2", f"DO{i+1}")
-            print(f"Setting DO{i+1} HIGH")
-            do.set(True)
-            input("Press Enter to continue...")
+    # while True:
+    #     for i in range(0, 10):
+    #         set_all_do_low(h)
+    #         print("All DOs set to LOW")
+    #         input("Press Enter to continue...")
+    #         do = h.do("HIL2", f"DO{i+1}")
+    #         print(f"Setting DO{i+1} HIGH")
+    #         do.set(True)
+    #         input("Press Enter to continue...")
+
+    # set_all_do_low(h)
+    # input("Press Enter to continue...")
+
+    # do = h.do("HIL2", f"DO1")
+    # print(f"Setting DO1 HIGH")
+    # do.set(True)
+
+
+
 
     # do = h.do("HIL2", f"DO5")
     # print(f"Setting DO5 HIGH")
@@ -76,26 +86,27 @@ def do_di_test(h: hil2.Hil2):
     # input("Press Enter to continue...")
 
 
-    # print("Setting DO4 LOW")
-    # do.set(False)
-    # time.sleep(0.1)
-    # input("Press Enter to continue...")
-    # state = True
-    # while True:
-    #     print("")
-    #     print(f"Setting DO1 to {state}")
-    #     do.set(state)
-    #     time.sleep(0.05)
+    print("Setting DO1 LOW")
+    do = h.do("HIL2", f"DO1")
+    do.set(False)
+    time.sleep(0.1)
+    input("Press Enter to continue...")
+    state = True
+    while True:
+        print("")
+        print(f"Setting DO1 to {state}")
+        do.set(state)
+        time.sleep(0.05)
 
-    #     for i in range(0, 16):
-    #         di = h.di("HIL2", f"DMUX_{i}")
-    #         val = di.get()
-    #         add = "" if not val else " (HIGH)"
-    #         print(f"DI_DMUX_{i}: {val} {add}")
-    #         time.sleep(0.03)
+        for i in range(0, 16):
+            di = h.di("HIL2", f"DMUX_{i}")
+            val = di.get()
+            add = "" if not val else " (HIGH)"
+            print(f"DI_DMUX_{i}: {val} {add}")
+            time.sleep(0.03)
 
-    #     state = not state
-    #     input("Press Enter to toggle DO1...")
+        state = not state
+        input("Press Enter to toggle DO1...")
 
 def ao_ai_test(h: hil2.Hil2):
     # ao1 = h.ao("HIL2", "DAC1")
@@ -161,8 +172,8 @@ def main():
         None,
         None
     ) as h:
-        # mka.add_test(do_di_test, h)
-        mka.add_test(ao_ai_test, h)
+        mka.add_test(do_di_test, h)
+        # mka.add_test(ao_ai_test, h)
 
         mka.run_tests()
 
