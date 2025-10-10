@@ -106,13 +106,13 @@ void setup() {
     // DAC_WIRE.setSDA(DAC_SDA);
     // DAC_WIRE.setSCL(DAC_SCL);
 
-    // for (int i = 0; i < NUM_DACS; i++) {
-    //     uint8_t addr = DAC_BASE_ADDR + i;
-    //     dacs[i].begin(addr, DAC_WIRE);
+    for (int i = 0; i < NUM_DACS; i++) {
+        uint8_t addr = DAC_BASE_ADDR + i;
+        dacs[i].begin(addr, DAC_WIRE);
 
-    //     dacs[i].setMode(MCP4706_PWRDN_500K);
-    //     dac_power_down[i] = true; // start with power down
-    // }
+        dacs[i].setMode(MCP4706_PWRDN_500K);
+        dac_power_down[i] = true; // start with power down
+    }
     DAC_WIRE.begin();
 
     // // Digipot setup
@@ -146,44 +146,44 @@ void send_error(uint8_t command) {
 
 // Loop ----------------------------------------------------------------------//
 void loop() {
-    byte error, address;
-    int nDevices;
+    // byte error, address;
+    // int nDevices;
 
-    Serial.println("Scanning... (wire2)");
+    // Serial.println("Scanning... (wire2)");
 
-    nDevices = 0;
-    for(address = 1; address < 127; address++ )
-    {
-        // The i2c_scanner uses the return value of
-        // the Write.endTransmisstion to see if
-        // a device did acknowledge to the address.
-        DAC_WIRE.beginTransmission(address);
-        error = DAC_WIRE.endTransmission();
+    // nDevices = 0;
+    // for(address = 1; address < 127; address++ )
+    // {
+    //     // The i2c_scanner uses the return value of
+    //     // the Write.endTransmisstion to see if
+    //     // a device did acknowledge to the address.
+    //     DAC_WIRE.beginTransmission(address);
+    //     error = DAC_WIRE.endTransmission();
 
-        if (error == 0)
-        {
-        Serial.print("I2C device found at address 0x");
-        if (address<16)
-            Serial.print("0");
-        Serial.print(address,HEX);
-        Serial.println("  !");
+    //     if (error == 0)
+    //     {
+    //     Serial.print("I2C device found at address 0x");
+    //     if (address<16)
+    //         Serial.print("0");
+    //     Serial.print(address,HEX);
+    //     Serial.println("  !");
 
-        nDevices++;
-        }
-        else if (error==4)
-        {
-        Serial.print("Unknown error at address 0x");
-        if (address<16)
-            Serial.print("0");
-        Serial.println(address,HEX);
-        }
-    }
-    if (nDevices == 0)
-        Serial.println("No I2C devices found\n");
-    else
-        Serial.println("done\n");
+    //     nDevices++;
+    //     }
+    //     else if (error==4)
+    //     {
+    //     Serial.print("Unknown error at address 0x");
+    //     if (address<16)
+    //         Serial.print("0");
+    //     Serial.println(address,HEX);
+    //     }
+    // }
+    // if (nDevices == 0)
+    //     Serial.println("No I2C devices found\n");
+    // else
+    //     Serial.println("done\n");
 
-    delay(500);
+    // delay(500);
 
     // uint8_t offset = g_serial_data[1];
     // uint8_t value = g_serial_data[2];
@@ -200,16 +200,16 @@ void loop() {
     // dacs[offset].setVoltage(value);
     // break;
 
-    // for (int i = 0; i < NUM_DACS; i++) {
-    //     if (dac_power_down[i]) {
-    //         dacs[i].setMode(MCP4706_AWAKE);
-    //         dac_power_down[i] = false;
-    //     }
-    //     Serial.print("Setting DAC ");
-    //     Serial.print(i);
-    //     Serial.println(" to mid-scale (128)");
-    //     dacs[i].setVoltage(128); // mid-scale
-    // }
+    for (int i = 0; i < NUM_DACS; i++) {
+        if (dac_power_down[i]) {
+            dacs[i].setMode(MCP4706_AWAKE);
+            dac_power_down[i] = false;
+        }
+        Serial.print("Setting DAC ");
+        Serial.print(i);
+        Serial.println(" to mid-scale (128)");
+        dacs[i].setVoltage(128); // mid-scale
+    }
 
     // if (g_data_ready) {
     //     g_data_ready = false;
