@@ -113,6 +113,7 @@ void setup() {
         dacs[i].setMode(MCP4706_PWRDN_500K);
         dac_power_down[i] = true; // start with power down
     }
+    DAC_WIRE.begin();
 
     // Digipot setup
     DIGIPOT_0_WIRE.setSDA(DIGIPOT_0_SDA);
