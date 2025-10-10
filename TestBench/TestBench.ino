@@ -157,8 +157,8 @@ void loop() {
         // The i2c_scanner uses the return value of
         // the Write.endTransmisstion to see if
         // a device did acknowledge to the address.
-        WIRE.beginTransmission(address);
-        error = WIRE.endTransmission();
+        DAC_WIRE.beginTransmission(address);
+        error = DAC_WIRE.endTransmission();
 
         if (error == 0)
         {
