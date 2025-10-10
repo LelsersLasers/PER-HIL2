@@ -158,7 +158,7 @@ void loop() {
             pinMode(pin, INPUT);
             int val = digitalRead(pin);
             SERIAL_CON.write(SerialCommand::READ_GPIO);
-            SERIAL_CON.write(val);
+            SERIAL_CON.write(1);
             break;
         }
         case SerialCommand::WRITE_DAC: {
