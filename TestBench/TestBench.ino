@@ -103,8 +103,8 @@ void setup() {
     SERIAL_CON.begin(SERIAL_BAUDRATE);
 
     // DAC setup
-    // DAC_WIRE.setSDA(DAC_SDA);
-    // DAC_WIRE.setSCL(DAC_SCL);
+    DAC_WIRE.setSDA(DAC_SDA);
+    DAC_WIRE.setSCL(DAC_SCL);
 
     // for (int i = 0; i < NUM_DACS; i++) {
     //     uint8_t addr = DAC_BASE_ADDR + i;
