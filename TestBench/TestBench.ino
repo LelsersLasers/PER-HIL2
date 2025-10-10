@@ -18,8 +18,6 @@ const int TESTER_ID = 1;
 // DAC conf ------------------------------------------------------------------//
 #define NUM_DACS 8
 #define DAC_WIRE Wire2
-#define DAC_SDA 25
-#define DAC_SCL 24
 #define DAC_BASE_ADDR 0x60
 //----------------------------------------------------------------------------//
 
@@ -27,12 +25,7 @@ const int TESTER_ID = 1;
 #define NUM_DIGIPOTS 2
 
 #define DIGIPOT_0_WIRE Wire1
-#define DIGIPOT_0_SDA 25
-#define DIGIPOT_0_SCL 16
-
-#define DIGIPOT_1_WIRE Wire2
-#define DIGIPOT_1_SDA 18
-#define DIGIPOT_1_SCL 19
+#define DIGIPOT_1_WIRE Wire
 
 const uint8_t DIGIPOT_MAX_STEPS = 128;
 const float DIGIPOT_MAX_OHMS = 10000;
@@ -113,12 +106,7 @@ void setup() {
     DAC_WIRE.begin();
 
     // Digipot setup
-    DIGIPOT_0_WIRE.setSDA(DIGIPOT_0_SDA);
-    DIGIPOT_0_WIRE.setSCL(DIGIPOT_0_SCL);
     digipots[0].begin(MCP4017ADDRESS, DIGIPOT_0_WIRE);
-
-    DIGIPOT_1_WIRE.setSDA(DIGIPOT_1_SDA);
-    DIGIPOT_1_WIRE.setSCL(DIGIPOT_1_SCL);
     digipots[1].begin(MCP4017ADDRESS, DIGIPOT_1_WIRE);
 
     // CAN setup
