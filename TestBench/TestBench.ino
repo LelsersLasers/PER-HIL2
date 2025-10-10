@@ -17,7 +17,7 @@ const int TESTER_ID = 1;
 
 // DAC conf ------------------------------------------------------------------//
 #define NUM_DACS 8
-#define DAC_WIRE Wire
+#define DAC_WIRE Wire1
 #define DAC_SDA 17
 #define DAC_SCL 24
 #define DAC_BASE_ADDR 0x60
@@ -26,7 +26,7 @@ const int TESTER_ID = 1;
 // Digipot conf --------------------------------------------------------------//
 #define NUM_DIGIPOTS 2
 
-#define DIGIPOT_0_WIRE Wire1
+#define DIGIPOT_0_WIRE Wire
 #define DIGIPOT_0_SDA 25
 #define DIGIPOT_0_SCL 16
 
