@@ -17,7 +17,7 @@ const int TESTER_ID = 1;
 
 // DAC conf ------------------------------------------------------------------//
 #define NUM_DACS 8
-#define DAC_WIRE Wire1
+#define DAC_WIRE Wire2
 #define DAC_SDA 25
 #define DAC_SCL 24
 #define DAC_BASE_ADDR 0x60
