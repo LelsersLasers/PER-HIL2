@@ -17,7 +17,7 @@ const int TESTER_ID = 1;
 
 // DAC conf ------------------------------------------------------------------//
 #define NUM_DACS 8
-#define DAC_WIRE Wire
+#define DAC_WIRE Wire1
 #define DAC_SDA 25
 #define DAC_SCL 24
 #define DAC_BASE_ADDR 0x60
@@ -103,8 +103,8 @@ void setup() {
     SERIAL_CON.begin(SERIAL_BAUDRATE);
 
     // DAC setup
-    DAC_WIRE.setSDA(DAC_SDA);
-    DAC_WIRE.setSCL(DAC_SCL);
+    // DAC_WIRE.setSDA(DAC_SDA);
+    // DAC_WIRE.setSCL(DAC_SCL);
 
     // for (int i = 0; i < NUM_DACS; i++) {
     //     uint8_t addr = DAC_BASE_ADDR + i;
