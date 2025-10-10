@@ -103,35 +103,37 @@ void setup() {
     SERIAL_CON.begin(SERIAL_BAUDRATE);
 
     // DAC setup
-    DAC_WIRE.setSDA(DAC_SDA);
-    DAC_WIRE.setSCL(DAC_SCL);
+    // DAC_WIRE.setSDA(DAC_SDA);
+    // DAC_WIRE.setSCL(DAC_SCL);
 
-    for (int i = 0; i < NUM_DACS; i++) {
-        uint8_t addr = DAC_BASE_ADDR + i;
-        dacs[i].begin(addr, DAC_WIRE);
+    // for (int i = 0; i < NUM_DACS; i++) {
+    //     uint8_t addr = DAC_BASE_ADDR + i;
+    //     dacs[i].begin(addr, DAC_WIRE);
 
-        dacs[i].setMode(MCP4706_PWRDN_500K);
-        dac_power_down[i] = true; // start with power down
-    }
+    //     dacs[i].setMode(MCP4706_PWRDN_500K);
+    //     dac_power_down[i] = true; // start with power down
+    // }
     DAC_WIRE.begin();
 
-    // Digipot setup
-    DIGIPOT_0_WIRE.setSDA(DIGIPOT_0_SDA);
-    DIGIPOT_0_WIRE.setSCL(DIGIPOT_0_SCL);
-    digipots[0].begin(MCP4017ADDRESS, DIGIPOT_0_WIRE);
+    // // Digipot setup
+    // DIGIPOT_0_WIRE.setSDA(DIGIPOT_0_SDA);
+    // DIGIPOT_0_WIRE.setSCL(DIGIPOT_0_SCL);
+    // digipots[0].begin(MCP4017ADDRESS, DIGIPOT_0_WIRE);
 
-    DIGIPOT_1_WIRE.setSDA(DIGIPOT_1_SDA);
-    DIGIPOT_1_WIRE.setSCL(DIGIPOT_1_SCL);
-    digipots[1].begin(MCP4017ADDRESS, DIGIPOT_1_WIRE);
+    // DIGIPOT_1_WIRE.setSDA(DIGIPOT_1_SDA);
+    // DIGIPOT_1_WIRE.setSCL(DIGIPOT_1_SCL);
+    // digipots[1].begin(MCP4017ADDRESS, DIGIPOT_1_WIRE);
 
-    // CAN setup
-    vCan.begin();
-    vCan.setBaudRate(CAN_BAUDRATE);
-    vCan.enableFIFO();
+    // // CAN setup
+    // vCan.begin();
+    // vCan.setBaudRate(CAN_BAUDRATE);
+    // vCan.enableFIFO();
 
-    mCan.begin();
-    mCan.setBaudRate(CAN_BAUDRATE);
-    mCan.enableFIFO();
+    // mCan.begin();
+    // mCan.setBaudRate(CAN_BAUDRATE);
+    // mCan.enableFIFO();
+
+    Serial.println("\nI2C scanner\n");
 }
 //----------------------------------------------------------------------------//
 
@@ -144,6 +146,45 @@ void send_error(uint8_t command) {
 
 // Loop ----------------------------------------------------------------------//
 void loop() {
+    byte error, address;
+    int nDevices;
+
+    Serial.println("Scanning...");
+
+    nDevices = 0;
+    for(address = 1; address < 127; address++ )
+    {
+        // The i2c_scanner uses the return value of
+        // the Write.endTransmisstion to see if
+        // a device did acknowledge to the address.
+        WIRE.beginTransmission(address);
+        error = WIRE.endTransmission();
+
+        if (error == 0)
+        {
+        Serial.print("I2C device found at address 0x");
+        if (address<16)
+            Serial.print("0");
+        Serial.print(address,HEX);
+        Serial.println("  !");
+
+        nDevices++;
+        }
+        else if (error==4)
+        {
+        Serial.print("Unknown error at address 0x");
+        if (address<16)
+            Serial.print("0");
+        Serial.println(address,HEX);
+        }
+    }
+    if (nDevices == 0)
+        Serial.println("No I2C devices found\n");
+    else
+        Serial.println("done\n");
+
+    delay(500);
+
     // uint8_t offset = g_serial_data[1];
     // uint8_t value = g_serial_data[2];
     
@@ -159,16 +200,16 @@ void loop() {
     // dacs[offset].setVoltage(value);
     // break;
 
-    for (int i = 0; i < NUM_DACS; i++) {
-        if (dac_power_down[i]) {
-            dacs[i].setMode(MCP4706_AWAKE);
-            dac_power_down[i] = false;
-        }
-        Serial.print("Setting DAC ");
-        Serial.print(i);
-        Serial.println(" to mid-scale (128)");
-        dacs[i].setVoltage(128); // mid-scale
-    }
+    // for (int i = 0; i < NUM_DACS; i++) {
+    //     if (dac_power_down[i]) {
+    //         dacs[i].setMode(MCP4706_AWAKE);
+    //         dac_power_down[i] = false;
+    //     }
+    //     Serial.print("Setting DAC ");
+    //     Serial.print(i);
+    //     Serial.println(" to mid-scale (128)");
+    //     dacs[i].setVoltage(128); // mid-scale
+    // }
 
     // if (g_data_ready) {
     //     g_data_ready = false;
