@@ -149,7 +149,7 @@ void loop() {
     byte error, address;
     int nDevices;
 
-    Serial.println("Scanning...");
+    Serial.println("Scanning... (wire2)");
 
     nDevices = 0;
     for(address = 1; address < 127; address++ )
