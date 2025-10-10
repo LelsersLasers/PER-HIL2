@@ -17,8 +17,8 @@ const int TESTER_ID = 1;
 
 // DAC conf ------------------------------------------------------------------//
 #define NUM_DACS 8
-#define DAC_WIRE Wire
-#define DAC_SDA 17
+#define DAC_WIRE Wire2
+#define DAC_SDA 25
 #define DAC_SCL 24
 #define DAC_BASE_ADDR 0x60
 //----------------------------------------------------------------------------//
@@ -103,9 +103,6 @@ void setup() {
     SERIAL_CON.begin(SERIAL_BAUDRATE);
 
     // DAC setup
-    DAC_WIRE.setSDA(DAC_SDA);
-    DAC_WIRE.setSCL(DAC_SCL);
-
     for (int i = 0; i < NUM_DACS; i++) {
         uint8_t addr = DAC_BASE_ADDR + i;
         dacs[i].begin(addr, DAC_WIRE);
@@ -113,6 +110,7 @@ void setup() {
         dacs[i].setMode(MCP4706_PWRDN_500K);
         dac_power_down[i] = true; // start with power down
     }
+    DAC_WIRE.begin();
 
     // Digipot setup
     DIGIPOT_0_WIRE.setSDA(DIGIPOT_0_SDA);
