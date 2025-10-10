@@ -17,8 +17,8 @@ const int TESTER_ID = 1;
 
 // DAC conf ------------------------------------------------------------------//
 #define NUM_DACS 8
-#define DAC_WIRE Wire1
-#define DAC_SDA 17
+#define DAC_WIRE Wire
+#define DAC_SDA 25
 #define DAC_SCL 24
 #define DAC_BASE_ADDR 0x60
 //----------------------------------------------------------------------------//
@@ -26,7 +26,7 @@ const int TESTER_ID = 1;
 // Digipot conf --------------------------------------------------------------//
 #define NUM_DIGIPOTS 2
 
-#define DIGIPOT_0_WIRE Wire
+#define DIGIPOT_0_WIRE Wire1
 #define DIGIPOT_0_SDA 25
 #define DIGIPOT_0_SCL 16
 
@@ -163,6 +163,9 @@ void loop() {
             dacs[i].setMode(MCP4706_AWAKE);
             dac_power_down[i] = false;
         }
+        Serial.print("Setting DAC ");
+        Serial.print(i);
+        Serial.println(" to mid-scale (128)");
         dacs[i].setVoltage(128); // mid-scale
     }
 
