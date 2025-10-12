@@ -105,12 +105,12 @@ def do_di_test(h: hil2.Hil2):
         #     print(f"DI_DMUX_{i}: {val} {add}")
         #     time.sleep(0.03)
 
-        for i in range(1, 3):
-            ai = h.ai("HIL2", f"DAI{i}")
-            val = ai.get()
-            print(f"AI_DAI{i}: {val} V")
-            time.sleep(0.03)
-            
+        # for i in range(1, 3):
+        #     ai = h.ai("HIL2", f"DAI{i}")
+        #     val = ai.get()
+        #     print(f"AI_DAI{i}: {val} V")
+        #     time.sleep(0.03)
+
 
         state = not state
         input("Press Enter to toggle DO1...")
@@ -141,7 +141,13 @@ def ao_ai_test(h: hil2.Hil2):
         ao.set(2.5)
         # input("Press Enter to continue...")
 
+    ai = h.ai("HIL2", "DAI2")
+    val = ai.get()
+    print(f"DAI2 reading: {val}V")
+    mka.assert_eqf(val, 2.5, 0.1, f"DAI2 should read approximately 2.5V (got {val}V)")
+
     input("Press Enter to continue...")
+    
 
     ao_ai_test(h)
             
@@ -179,8 +185,8 @@ def main():
         None,
         None
     ) as h:
-        mka.add_test(do_di_test, h)
-        # mka.add_test(ao_ai_test, h)
+        # mka.add_test(do_di_test, h)
+        mka.add_test(ao_ai_test, h)
 
         mka.run_tests()
 
