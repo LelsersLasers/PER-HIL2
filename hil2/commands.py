@@ -221,8 +221,8 @@ def parse_can_messages(
             # logging.debug(f"Expected CAN message: {expected_msg}")
             decoded = can_dbc.decode_message(signal, data)
             v.append(can_helper.CanMessage(signal, decoded))
-        except Exception:
-            logging.error(f"Failed to decode CAN message with ID {signal} ({signal})")
+        except Exception as e:
+            logging.error(f"Failed to decode CAN message with ID {signal} ({e})")
     return v
 
 
