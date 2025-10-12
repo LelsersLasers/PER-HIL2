@@ -495,7 +495,12 @@ class TestDevice:
         :param can_dbc: The CAN database to use for encoding
         """
         raw_data = list(can_dbc.encode_message(signal, data))
-        msg_id = can_dbc.get_message_by_name(signal).frame_id
+        if isinstance(signal, int):
+            msg_id = signal
+            message = can_dbc.get_message_by_frame_id(msg_id)
+        else:
+            message = can_dbc.get_message_by_name(signal)
+            msg_id = message.frame_id
 
         match self._ser:
             case None:
