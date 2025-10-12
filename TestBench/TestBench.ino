@@ -107,7 +107,10 @@ void setup() {
 
     // Digipot setup
     digipots[0].begin(MCP4017ADDRESS, DIGIPOT_0_WIRE);
+    DIGIPOT_0_WIRE.begin();
+
     digipots[1].begin(MCP4017ADDRESS, DIGIPOT_1_WIRE);
+    DIGIPOT_1_WIRE.begin();
 
     // CAN setup
     vCan.begin();
