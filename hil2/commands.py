@@ -204,6 +204,7 @@ def send_can(
         *padding,
     ]
     logging.debug(f"Sending - SEND_CAN: {command}")
+    print(f"Sending - SEND_CAN: {command}")
     ser.write(bytearray(command))
 
 
