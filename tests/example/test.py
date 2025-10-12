@@ -201,12 +201,12 @@ def can_recv_test(h: hil2.Hil2):
 
         
 def can_send_test(h: hil2.Hil2):
-    vcan = h.can("HIL2", "VCAN")
+    mcan = h.can("HIL2", "mcan")
 
-    print("Sending CAN messages on VCAN...")
+    print("Sending CAN messages on mcan...")
     while True:
-        vcan.send("BrakeLeft", { "raw_reading": 12 })
-        print("Sent BrakeLeft message with raw_reading=12")
+        mcan.send("main_hb", { "precharge_state": 1, "car_state": 4 })
+        print("Sent CAN message: main_hb")
         time.sleep(1)
 
 
@@ -221,8 +221,8 @@ def main():
     ) as h:
         # mka.add_test(do_di_test, h)
         # mka.add_test(ao_ai_test, h)
-        mka.add_test(can_recv_test, h)
-        # mka.add_test(can_send_test, h)
+        # mka.add_test(can_recv_test, h)
+        mka.add_test(can_send_test, h)
 
         mka.run_tests()
 
