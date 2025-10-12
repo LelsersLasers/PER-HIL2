@@ -135,8 +135,8 @@ def ao_ai_test(h: hil2.Hil2):
 
     input("Press Enter to continue...")
 
-    for v in range(0, 500):
-        voltage = v / 100.0
+    for v in range(0, 50):
+        voltage = v / 10.0
         # print(f"Setting all DACs to {voltage}V")
         for i in range(0, 8):
             ao = h.ao("HIL2", f"DAC{i+1}")
@@ -146,7 +146,9 @@ def ao_ai_test(h: hil2.Hil2):
         ai = h.ai("HIL2", "DAI2")
         val = ai.get()
         # print(f"DAI2 reading: {val}V")
-        mka.assert_eqf(val, voltage, 0.1, f"DAI2 should read approximately {voltage}V (got {val}V)")
+        mka.assert_eqf(val, voltage, 0.05, f"DAI2 should read approximately {voltage}V (got {val}V)")
+        
+        
 
     input("Press Enter to continue...")
     
@@ -179,7 +181,7 @@ def ao_ai_test(h: hil2.Hil2):
     #     input("Press Enter to continue...")
 
 def main():
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.WARNING)
     
     with hil2.Hil2(
         "./tests/example/config.json",
