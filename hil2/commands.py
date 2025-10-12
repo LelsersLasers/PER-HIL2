@@ -204,11 +204,22 @@ def parse_can_messages(
     :param can_dbc: The DBC database to use for decoding messages.
     :return: A list of parsed CAN messages.
     """
-    return [
-        can_helper.CanMessage(signal, can_dbc.decode_message(signal, data))
-        for values in ser.get_parsed_can_messages(bus)
-        for signal, data in [((values[1] << 8) | values[2], values[4 : 4 + values[3]])]
-    ]
+    # return [
+    #     can_helper.CanMessage(signal, can_dbc.decode_message(signal, data))
+    #     for values in ser.get_parsed_can_messages(bus)
+    #     for signal, data in [((values[1] << 8) | values[2], values[4 : 4 + values[3]])]
+    # ]
+    v = []
+    for values in ser.get_parsed_can_messages(bus):
+        signal = (values[1] << 8) | values[2]
+        data = values[4 : 4 + values[3]]
+        try:
+            decoded = can_dbc.decode_message(signal, data)
+            v.append(can_helper.CanMessage(signal, decoded))
+        except Exception as e:
+            logging.error(f"Failed to decode CAN message with ID {signal}: {e}")
+    return v
+
 
 
 # Serial parsing/spliting -------------------------------------------------------------#
