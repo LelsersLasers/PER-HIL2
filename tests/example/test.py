@@ -201,11 +201,11 @@ def can_recv_test(h: hil2.Hil2):
 
         
 def can_send_test(h: hil2.Hil2):
-    mcan = h.can("HIL2", "mcan")
+    vcan = h.can("HIL2", "VCAN")
 
     print("Sending CAN messages on mcan...")
     while True:
-        mcan.send("main_hb", { "precharge_state": 1, "car_state": 4 })
+        vcan.send("main_hb", { "precharge_state": 1, "car_state": 4 })
         print("Sent CAN message: main_hb")
         time.sleep(1)
 
