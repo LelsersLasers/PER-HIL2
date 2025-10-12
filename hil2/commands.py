@@ -217,27 +217,24 @@ def parse_can_messages(
     :param can_dbc: The DBC database to use for decoding messages.
     :return: A list of parsed CAN messages.
     """
-    # return [
-    #     can_helper.CanMessage(signal, can_dbc.decode_message(signal, data))
-    #     for values in ser.get_parsed_can_messages(bus)
-    #     for signal, data in [((values[1] << 8) | values[2], values[4 : 4 + values[3]])]
-    # ]
-    v = []
-    for values in ser.get_parsed_can_messages(bus):
-        # signal = (values[1] << 24) | (values[2] << 16) | (values[3] << 8) | values[4]
+
+    def decode(values):
         signal = (
             (values[1] << 24) | (values[2] << 16) | (values[3] << 8) | values[4]
         ) & 0x1FFFFFFF
-        # signal_with_flag = signal | 0x80000000  # add extended flag
-        data = values[6 : 6 + values[5]]
+        data = bytes(values[6 : 6 + values[5]])
         try:
-            # expected_msg = can_dbc.get_message_by_frame_id(signal_with_flag)
-            # logging.debug(f"Expected CAN message: {expected_msg}")
-            decoded = can_dbc.decode_message(signal, bytes(data))
-            v.append(can_helper.CanMessage(signal, decoded))
+            decoded = can_dbc.decode_message(signal, data)
+            return can_helper.CanMessage(signal, decoded)
         except Exception as e:
             logging.error(f"Failed to decode CAN message with ID {signal} ({e})")
-    return v
+            return None
+
+    return [
+        msg
+        for values in ser.get_parsed_can_messages(bus)
+        if (msg := decode(values)) is not None
+    ]
 
 
 # Serial parsing/spliting -------------------------------------------------------------#
