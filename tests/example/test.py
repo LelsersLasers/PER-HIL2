@@ -135,16 +135,18 @@ def ao_ai_test(h: hil2.Hil2):
 
     input("Press Enter to continue...")
 
-    for i in range(0, 8):
-        ao = h.ao("HIL2", f"DAC{i+1}")
-        print(f"Setting DAC{i+1} to 2.5V")
-        ao.set(2.5)
-        # input("Press Enter to continue...")
+    for v in range(0, 500):
+        voltage = v / 100.0
+        # print(f"Setting all DACs to {voltage}V")
+        for i in range(0, 8):
+            ao = h.ao("HIL2", f"DAC{i+1}")
+            ao.set(voltage)
+        time.sleep(0.05)
 
-    ai = h.ai("HIL2", "DAI2")
-    val = ai.get()
-    print(f"DAI2 reading: {val}V")
-    mka.assert_eqf(val, 2.5, 0.1, f"DAI2 should read approximately 2.5V (got {val}V)")
+        ai = h.ai("HIL2", "DAI2")
+        val = ai.get()
+        # print(f"DAI2 reading: {val}V")
+        mka.assert_eqf(val, voltage, 0.1, f"DAI2 should read approximately {voltage}V (got {val}V)")
 
     input("Press Enter to continue...")
     
