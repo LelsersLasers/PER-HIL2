@@ -67,7 +67,7 @@ enum SerialCommand : uint8_t {
     READ_ADC   = 6,  // command, pin               -> READ_ADC, value high, value low
     WRITE_POT  = 7,  // command, pin/offset, value -> []
     SEND_CAN   = 8,  // command, bus, signal high, signal low, length, data (8 bytes) -> []
-    RECV_CAN   = 9,  // <async>                    -> CAN_MESSAGE, bus, signal high, signal low, length, data (length bytes)
+    RECV_CAN   = 9,  // <async>                    -> CAN_MESSAGE, bus, signal bytes: 3-0, length, data (length bytes)
     ERROR      = 10, // <async/any>                -> ERROR, command
 };
 
@@ -246,15 +246,19 @@ void loop() {
     } else if (vCan.read(recv_msg)) {
         SERIAL_CON.write(RECV_CAN);
         SERIAL_CON.write(VCAN_BUS);                   // bus 1
-        SERIAL_CON.write((recv_msg.id >> 8) & 0xFF);  // signal high
-        SERIAL_CON.write(recv_msg.id & 0xFF);         // signal low
+        SERIAL_CON.write((recv_msg.id >> 24) & 0xFF); // signal byte 3
+        SERIAL_CON.write((recv_msg.id >> 16) & 0xFF); // signal byte 2
+        SERIAL_CON.write((recv_msg.id >> 8) & 0xFF);  // signal byte 1
+        SERIAL_CON.write(recv_msg.id & 0xFF);         // signal byte 0
         SERIAL_CON.write(recv_msg.len);               // length
         SERIAL_CON.write(recv_msg.buf, recv_msg.len); // g_serial_data
     } else if (mCan.read(recv_msg)) {
         SERIAL_CON.write(RECV_CAN);
         SERIAL_CON.write(MCAN_BUS);                   // bus 2
-        SERIAL_CON.write((recv_msg.id >> 8) & 0xFF);  // signal high
-        SERIAL_CON.write(recv_msg.id & 0xFF);         // signal low
+        SERIAL_CON.write((recv_msg.id >> 24) & 0xFF); // signal byte 3
+        SERIAL_CON.write((recv_msg.id >> 16) & 0xFF); // signal byte 2
+        SERIAL_CON.write((recv_msg.id >> 8) & 0xFF);  // signal byte 1
+        SERIAL_CON.write(recv_msg.id & 0xFF);         // signal byte 0
         SERIAL_CON.write(recv_msg.len);               // length
         SERIAL_CON.write(recv_msg.buf, recv_msg.len); // data
     }

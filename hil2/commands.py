@@ -21,8 +21,8 @@ HIZ_DAC    = 5  # command, pin/offset        -> []
 READ_ADC   = 6  # command, pin               -> READ_ADC, value high, value low
 WRITE_POT  = 7  # command, pin/offset, value -> []
 SEND_CAN   = 8  # command, bus, signal high, signal low, length, data (8 bytes) -> []
-RECV_CAN   = 9  # <async>                    -> CAN_MESSAGE, bus, signal high,
-                #                               signal low, length, data (length bytes)
+RECV_CAN   = 9  # <async>                    -> CAN_MESSAGE, bus, signal bytes: 3-0,
+                #                               length, data (length bytes)
 ERROR      = 10 # <async/any>                -> ERROR, command
 # fmt: on
 
@@ -65,6 +65,7 @@ def write_gpio(ser: serial_helper.ThreadedSerial, pin: int, value: bool) -> None
     command = [WRITE_GPIO, pin, int(value)]
     logging.debug(f"Sending - WRITE_GPIO: {command}")
     ser.write(bytearray(command))
+
 
 def hiZ_gpio(ser: serial_helper.ThreadedSerial, pin: int) -> None:
     """
@@ -211,15 +212,14 @@ def parse_can_messages(
     # ]
     v = []
     for values in ser.get_parsed_can_messages(bus):
-        signal = (values[1] << 8) | values[2]
-        data = values[4 : 4 + values[3]]
+        signal = (values[1] << 24) | (values[2] << 16) | (values[3] << 8) | values[4]
+        data = values[6 : 6 + values[5]]
         try:
             decoded = can_dbc.decode_message(signal, data)
             v.append(can_helper.CanMessage(signal, decoded))
         except Exception as e:
             logging.error(f"Failed to decode CAN message with ID {signal}: {e}")
     return v
-
 
 
 # Serial parsing/spliting -------------------------------------------------------------#
@@ -258,17 +258,18 @@ def parse_readings(
             logging.debug(f"Parsed - READ_ADC: {value_high}, {value_low}")
             parsed_readings[READ_ADC] = [value_high, value_low]
             return True, rest
-        case [cmd, bus, signal_high, signal_low, length, *rest] if (
+        case [cmd, bus, signal_3, signal_2, signal_1, signal_0, length, *rest] if (
             cmd == RECV_CAN and len(rest) >= length
         ):
             logging.debug(
-                f"Parsed - RECV_CAN: {bus}, {signal_high}, {signal_low}, {length}"
+                f"Parsed - RECV_CAN: {bus}, {signal_3}, {signal_2}, {signal_1}, "
+                + f"{signal_0}, {length}, {rest[:length]}"
             )
             data, remaining = rest[:length], rest[length:]
             if bus not in parsed_can_messages:
                 parsed_can_messages[bus] = []
             parsed_can_messages[bus].append(
-                [bus, signal_high, signal_low, length, *data]
+                [bus, signal_3, signal_2, signal_1, signal_0, length, *data]
             )
             return True, remaining
         case [cmd, command, *rest] if cmd == ERROR:
