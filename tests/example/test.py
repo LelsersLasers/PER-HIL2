@@ -206,8 +206,8 @@ def can_send_test(h: hil2.Hil2):
     print("Sending CAN messages on VCAN...")
     val = 0
     while True:
-        print(f"Sending CAN message: start_button, start: {val}")
-        vcan.send("start_button", { "start": val })
+        print(f"Sending CAN message: main_hb with precharge_state=1, car_state={val}")
+        vcan.send("main_hb", { "precharge_state": 1, "car_state": val })
         if val == 0:
             val = 1
         else:
@@ -215,7 +215,7 @@ def can_send_test(h: hil2.Hil2):
 
         last_msgs = vcan.get_all()
         for msg in last_msgs:
-            print(f"Last CAN message: ID={msg.signal}, Data={msg.data}")
+            print(f"\tLast CAN message: ID={msg.signal}, Data={msg.data}")
         vcan.clear()
 
         time.sleep(1)
