@@ -125,6 +125,20 @@ void send_error(uint8_t command) {
 }
 //----------------------------------------------------------------------------//
 
+// CAN -----------------------------------------------------------------------//
+void send_can(uint8_t bus) {
+    SERIAL_CON.write(RECV_CAN);                   // cmd
+    SERIAL_CON.write(bus);                        // bus 
+    SERIAL_CON.write((recv_msg.id >> 24) & 0xFF); // signal byte 3
+    SERIAL_CON.write((recv_msg.id >> 16) & 0xFF); // signal byte 2
+    SERIAL_CON.write((recv_msg.id >> 8) & 0xFF);  // signal byte 1
+    SERIAL_CON.write(recv_msg.id & 0xFF);         // signal byte 0
+    SERIAL_CON.write(recv_msg.len);               // length
+    SERIAL_CON.write(recv_msg.buf, recv_msg.len); // data
+}
+//----------------------------------------------------------------------------//
+
+
 // Loop ----------------------------------------------------------------------//
 void loop() {
     if (g_data_ready) {
@@ -219,7 +233,7 @@ void loop() {
             msg.len = length;
             memcpy(msg.buf, &g_serial_data[7], length);
             msg.len = length;
-            msg.flags.extended = 1;
+            msg.flags.extended = true;
 
             if (bus == VCAN_BUS) {
                 vCan.write(msg);
@@ -245,23 +259,9 @@ void loop() {
             g_data_ready = true;
         }
     } else if (vCan.read(recv_msg)) {
-        SERIAL_CON.write(RECV_CAN);
-        SERIAL_CON.write(VCAN_BUS);                   // bus 1
-        SERIAL_CON.write((recv_msg.id >> 24) & 0xFF); // signal byte 3
-        SERIAL_CON.write((recv_msg.id >> 16) & 0xFF); // signal byte 2
-        SERIAL_CON.write((recv_msg.id >> 8) & 0xFF);  // signal byte 1
-        SERIAL_CON.write(recv_msg.id & 0xFF);         // signal byte 0
-        SERIAL_CON.write(recv_msg.len);               // length
-        SERIAL_CON.write(recv_msg.buf, recv_msg.len); // g_serial_data
+        send_can(VCAN_BUS);
     } else if (mCan.read(recv_msg)) {
-        SERIAL_CON.write(RECV_CAN);
-        SERIAL_CON.write(MCAN_BUS);                   // bus 2
-        SERIAL_CON.write((recv_msg.id >> 24) & 0xFF); // signal byte 3
-        SERIAL_CON.write((recv_msg.id >> 16) & 0xFF); // signal byte 2
-        SERIAL_CON.write((recv_msg.id >> 8) & 0xFF);  // signal byte 1
-        SERIAL_CON.write(recv_msg.id & 0xFF);         // signal byte 0
-        SERIAL_CON.write(recv_msg.len);               // length
-        SERIAL_CON.write(recv_msg.buf, recv_msg.len); // data
+        send_can(MCAN_BUS);
     }
 }
 //----------------------------------------------------------------------------//
