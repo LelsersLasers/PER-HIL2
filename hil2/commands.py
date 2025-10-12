@@ -217,8 +217,8 @@ def parse_can_messages(
         signal_with_flag = signal | 0x80000000  # add extended flag
         data = values[6 : 6 + values[5]]
         try:
-            expected_msg = can_dbc.get_message_by_frame_id(signal_with_flag)
-            logging.debug(f"Expected CAN message: {expected_msg}")
+            # expected_msg = can_dbc.get_message_by_frame_id(signal_with_flag)
+            # logging.debug(f"Expected CAN message: {expected_msg}")
             decoded = can_dbc.decode_message(signal_with_flag, data)
             v.append(can_helper.CanMessage(signal, decoded))
         except Exception:
