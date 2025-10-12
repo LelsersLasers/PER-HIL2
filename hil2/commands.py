@@ -40,6 +40,7 @@ def read_id(ser_raw: serial.Serial) -> Optional[int]:
     """
     command = [READ_ID]
     logging.debug(f"Sending - READ_ID: {command}")
+    ser_raw.reset_input_buffer()
     ser_raw.write(bytearray(command))
     try:
         response = ser_raw.read(2)  # Read command byte and ID byte
