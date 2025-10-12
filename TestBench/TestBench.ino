@@ -230,6 +230,8 @@ void loop() {
                     (static_cast<uint32_t>(g_serial_data[3]) << 16) |
                     (static_cast<uint32_t>(g_serial_data[4]) << 8)  |
                     static_cast<uint32_t>(g_serial_data[5]);
+            signal &= 0x1FFFFFFF; // mask to 29 bits
+            signal |= 0x80000000; // set extended flag
             uint8_t length = g_serial_data[6];
             CAN_message_t msg = { 0 };
             msg.id = signal;

@@ -206,12 +206,12 @@ def can_send_test(h: hil2.Hil2):
     print("Sending CAN messages on VCAN...")
     val = 0
     while True:
+        print(f"Sending CAN message: start_button, start: {val}")
         vcan.send("start_button", { "start": val })
         if val == 0:
             val = 1
         else:
             val = 0
-        print("Sent CAN message: start_button")
 
         last_msgs = vcan.get_all()
         for msg in last_msgs:
