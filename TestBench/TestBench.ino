@@ -50,7 +50,7 @@ MCP4017 digipots[NUM_DIGIPOTS] = {
   MCP4017(DIGIPOT_MAX_STEPS, DIGIPOT_MAX_OHMS) 
 };
 
-FlexCAN_T4<CAN1, CAN_RX, CAN_TX> vCan; // bus: 1
+FlexCAN_T4<CAN2, CAN_RX, CAN_TX> vCan; // bus: 1
 FlexCAN_T4<CAN3, CAN_RX, CAN_TX> mCan; // bus: 2
 CAN_message_t recv_msg = { 0 };
 //----------------------------------------------------------------------------//
@@ -112,11 +112,11 @@ void setup() {
     // CAN setup
     vCan.begin();
     vCan.setBaudRate(CAN_BAUDRATE);
-    vCan.enableFIFO();
+    // vCan.enableFIFO();
 
     mCan.begin();
     mCan.setBaudRate(CAN_BAUDRATE);
-    mCan.enableFIFO();
+    // mCan.enableFIFO();
 }
 //----------------------------------------------------------------------------//
 
