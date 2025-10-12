@@ -219,7 +219,7 @@ def parse_can_messages(
         try:
             # expected_msg = can_dbc.get_message_by_frame_id(signal_with_flag)
             # logging.debug(f"Expected CAN message: {expected_msg}")
-            decoded = can_dbc.decode_message(signal, data)
+            decoded = can_dbc.decode_message(signal, bytes(data))
             v.append(can_helper.CanMessage(signal, decoded))
         except Exception as e:
             logging.error(f"Failed to decode CAN message with ID {signal} ({e})")
