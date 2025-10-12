@@ -98,12 +98,19 @@ def do_di_test(h: hil2.Hil2):
         do.set(state)
         time.sleep(0.05)
 
-        for i in range(0, 16):
-            di = h.di("HIL2", f"DMUX_{i}")
-            val = di.get()
-            add = "" if not val else " (HIGH)"
-            print(f"DI_DMUX_{i}: {val} {add}")
+        # for i in range(0, 16):
+        #     di = h.di("HIL2", f"DMUX_{i}")
+        #     val = di.get()
+        #     add = "" if not val else " (HIGH)"
+        #     print(f"DI_DMUX_{i}: {val} {add}")
+        #     time.sleep(0.03)
+
+        for i in range(1, 3):
+            ai = h.ai("HIL2", f"DAI{i}")
+            val = ai.get()
+            print(f"AI_DAI{i}: {val} V")
             time.sleep(0.03)
+            
 
         state = not state
         input("Press Enter to toggle DO1...")
