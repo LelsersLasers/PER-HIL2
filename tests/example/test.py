@@ -191,11 +191,11 @@ def can_recv_test(h: hil2.Hil2):
     while True:
         msg = vcan.get_last()
         if msg is not None:
-            print(f"Received CAN message: ID={msg['id']}, Data={msg['data']}")
+            print(f"Received CAN message: ID={msg.signal}, Data={msg.data}")
             vcan.clear()
         msg = mcan.get_last()
         if msg is not None:
-            print(f"Received CAN message: ID={msg['id']}, Data={msg['data']}")
+            print(f"Received CAN message: ID={msg.signal}, Data={msg.data}")
             mcan.clear()
         time.sleep(0.1)
 
