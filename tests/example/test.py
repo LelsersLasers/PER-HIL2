@@ -143,7 +143,7 @@ def ao_ai_test(h: hil2.Hil2):
             ao.set(voltage)
         time.sleep(0.05)
 
-        ai = h.ai("HIL2", "DAI2")
+        ai = h.ai("HIL2", "5vMUX_0")
         val = ai.get()
         # print(f"DAI2 reading: {val}V")
         mka.assert_eqf(val, voltage, 0.05, f"DAI2 should read approximately {voltage}V (got {val}V)")
