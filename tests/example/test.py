@@ -211,7 +211,7 @@ def can_send_test(h: hil2.Hil2):
 
 
 def main():
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.WARNING)
     
     with hil2.Hil2(
         "./tests/example/config.json",
