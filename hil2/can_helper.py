@@ -1,6 +1,7 @@
 from typing import Optional
 
 import os
+import logging
 
 import cantools.database.can.database as cantools_db
 
@@ -18,17 +19,23 @@ def load_can_dbcs(dbc_fpath: str, recursive: bool = False) -> cantools_db.Databa
     db = cantools_db.Database()
 
     if not dbc_fpath or not os.path.isdir(dbc_fpath):
+        logging.warning(f"Invalid DBC folder path: {dbc_fpath}")
         return db
 
     if recursive:
         for root, _, files in os.walk(dbc_fpath):
             for file in files:
                 if file.endswith(".dbc"):
+                    logging.debug(f"Loading DBC file: {os.path.join(root, file)}")
                     db.add_dbc_file(os.path.join(root, file))
     else:
         for file in os.listdir(dbc_fpath):
             if file.endswith(".dbc"):
+                logging.debug(f"Loading DBC file: {os.path.join(dbc_fpath, file)}")
                 db.add_dbc_file(os.path.join(dbc_fpath, file))
+
+    if not db.messages:
+        logging.error(f"No DBC files found in folder: {dbc_fpath}")
 
     return db
 
