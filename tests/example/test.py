@@ -206,7 +206,7 @@ def can_send_test(h: hil2.Hil2):
     print("Sending CAN messages on VCAN...")
     val = 0
     while True:
-        vcan.send("start_button", { "start_button": val })
+        vcan.send("start_button", { "start": val })
         if val == 0:
             val = 1
         else:
