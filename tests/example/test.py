@@ -183,17 +183,40 @@ def ao_ai_test(h: hil2.Hil2):
 
     #     input("Press Enter to continue...")
 
+def can_recv_test(h: hil2.Hil2):
+    mcan = h.can("HIL2", "VCAN")
+
+    print("Listening for CAN messages on VCAN...")
+    while True:
+        msg = mcan.get_last()
+        if msg is not None:
+            print(f"Received CAN message: ID={msg['id']}, Data={msg['data']}")
+            mcan.clear()
+
+        
+def can_send_test(h: hil2.Hil2):
+    mcan = h.can("HIL2", "VCAN")
+
+    print("Sending CAN messages on VCAN...")
+    while True:
+        mcan.send("BrakeLeft", { "raw_reading": 12 })
+        print("Sent BrakeLeft message with raw_reading=12")
+        time.sleep(1)
+
+
 def main():
-    logging.basicConfig(level=logging.WARNING)
+    logging.basicConfig(level=logging.DEBUG)
     
     with hil2.Hil2(
         "./tests/example/config.json",
         "device_configs",
         None,
-        None
+        "../t/firmware/common/daq"
     ) as h:
         # mka.add_test(do_di_test, h)
-        mka.add_test(ao_ai_test, h)
+        # mka.add_test(ao_ai_test, h)
+        mka.add_test(can_recv_test, h)
+        # mka.add_test(can_send_test, h)
 
         mka.run_tests()
 
