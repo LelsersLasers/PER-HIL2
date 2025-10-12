@@ -119,7 +119,7 @@ class ThreadedSerial:
         Attempt to read a single byte from the serial port.
         """
         read_data = self.serial_con.read(1)
-        # logging.debug(f"Read {read_data} from serial port")
+        logging.debug(f"Read {read_data} from serial port")
         if len(read_data) < 1:
             return
         value = int.from_bytes(read_data, "big")
