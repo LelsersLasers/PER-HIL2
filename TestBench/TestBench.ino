@@ -66,7 +66,7 @@ enum SerialCommand : uint8_t {
     HIZ_DAC    = 5,  // command, pin/offset        -> []
     READ_ADC   = 6,  // command, pin               -> READ_ADC, value high, value low
     WRITE_POT  = 7,  // command, pin/offset, value -> []
-    SEND_CAN   = 8,  // command, bus, signal high, signal low, length, data (8 bytes) -> []
+    SEND_CAN   = 8,  // command, bus, signal bytes: 3-0, length, data (8 bytes) -> []
     RECV_CAN   = 9,  // <async>                    -> CAN_MESSAGE, bus, signal bytes: 3-0, length, data (length bytes)
     ERROR      = 10, // <async/any>                -> ERROR, command
 };
@@ -80,7 +80,7 @@ size_t TO_READ[] = { // Parrallel to SerialCommand
     2,  // HIZ_DAC
     2,  // READ_ADC
     3,  // WRITE_POT
-    13, // SEND_CAN
+    15, // SEND_CAN
 };
 
 // 13 = max(TO_READ)
@@ -211,14 +211,17 @@ void loop() {
         }
         case SerialCommand::SEND_CAN: {
             uint8_t bus = g_serial_data[1];
-            uint16_t signal = (g_serial_data[2] << 8) | g_serial_data[3]; // 11-bit ID
-            uint8_t length = g_serial_data[4];
+            uint32_t signal = (static_cast<uint32_t>(g_serial_data[2]) << 24) |
+                    (static_cast<uint32_t>(g_serial_data[3]) << 16) |
+                    (static_cast<uint32_t>(g_serial_data[4]) << 8)  |
+                    static_cast<uint32_t>(g_serial_data[5]);
+            uint8_t length = g_serial_data[6];
             CAN_message_t msg = { 0 };
             msg.id = signal;
             msg.len = length;
-            memcpy(msg.buf, &g_serial_data[5], length);
+            memcpy(msg.buf, &g_serial_data[7], length);
             msg.len = length;
-            msg.flags.extended = false; 
+            msg.flags.extended = 1;
 
             if (bus == VCAN_BUS) {
                 vCan.write(msg);

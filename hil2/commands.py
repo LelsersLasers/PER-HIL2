@@ -20,7 +20,7 @@ WRITE_DAC  = 4  # command, pin/offset, value -> []
 HIZ_DAC    = 5  # command, pin/offset        -> []
 READ_ADC   = 6  # command, pin               -> READ_ADC, value high, value low
 WRITE_POT  = 7  # command, pin/offset, value -> []
-SEND_CAN   = 8  # command, bus, signal high, signal low, length, data (8 bytes) -> []
+SEND_CAN   = 8  # command, bus, signal bytes: 3-0, length, data (8 bytes) -> []
 RECV_CAN   = 9  # <async>                    -> CAN_MESSAGE, bus, signal bytes: 3-0,
                 #                               length, data (length bytes)
 ERROR      = 10 # <async/any>                -> ERROR, command
@@ -185,11 +185,23 @@ def send_can(
     :param signal: The CAN signal ID.
     :param data: The data to send (up to 8 bytes). When sent, will be padded with zeros.
     """
-    signal_high = (signal >> 8) & 0xFF
-    signal_low = signal & 0xFF
+    signal_3 = (signal >> 24) & 0xFF
+    signal_2 = (signal >> 16) & 0xFF
+    signal_1 = (signal >> 8) & 0xFF
+    signal_0 = signal & 0xFF
     length = len(data)
     padding = [0] * (8 - len(data))
-    command = [SEND_CAN, bus, signal_high, signal_low, length, *data, *padding]
+    command = [
+        SEND_CAN,
+        bus,
+        signal_3,
+        signal_2,
+        signal_1,
+        signal_0,
+        length,
+        *data,
+        *padding,
+    ]
     logging.debug(f"Sending - SEND_CAN: {command}")
     ser.write(bytearray(command))
 
@@ -213,7 +225,9 @@ def parse_can_messages(
     v = []
     for values in ser.get_parsed_can_messages(bus):
         # signal = (values[1] << 24) | (values[2] << 16) | (values[3] << 8) | values[4]
-        signal = ((values[1] << 24) | (values[2] << 16) | (values[3] << 8) | values[4]) & 0x1FFFFFFF
+        signal = (
+            (values[1] << 24) | (values[2] << 16) | (values[3] << 8) | values[4]
+        ) & 0x1FFFFFFF
         # signal_with_flag = signal | 0x80000000  # add extended flag
         data = values[6 : 6 + values[5]]
         try:
