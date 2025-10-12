@@ -217,7 +217,7 @@ def main():
         "./tests/example/config.json",
         "device_configs",
         None,
-        "../t/firmware/common/daq"
+        "/home/ronak/firmware/common/daq"
     ) as h:
         # mka.add_test(do_di_test, h)
         # mka.add_test(ao_ai_test, h)
