@@ -112,11 +112,9 @@ void setup() {
     // CAN setup
     vCan.begin();
     vCan.setBaudRate(CAN_BAUDRATE);
-    // vCan.enableFIFO();
 
     mCan.begin();
     mCan.setBaudRate(CAN_BAUDRATE);
-    // mCan.enableFIFO();
 }
 //----------------------------------------------------------------------------//
 
