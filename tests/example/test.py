@@ -2,8 +2,6 @@ import hil2.hil2 as hil2
 import mk_assert.mk_assert as mka
 import time
 
-import matplotlib.pyplot as plt
-
 import logging
 
 def float_range(start, stop, step):
@@ -155,20 +153,6 @@ def ao_ai_test(h: hil2.Hil2):
         # print(f"DAI2 reading: {val}V")
         mka.assert_eqf(val, voltage, 0.05, f"DAI2 should read approximately {voltage}V (got {val}V)")
         
-    # Plot
-    plt.plot(xs, ys, marker='o')
-    plt.xlabel('Set Voltage (V)')
-    plt.ylabel('Measured Voltage (V)')
-    plt.title('AO to AI Voltage Response')
-    plt.grid(True)
-    plt.xlim(0, 5)
-    plt.ylim(0, 5)
-    plt.axhline(0, color='black',linewidth=0.5, ls='--')
-    plt.axvline(0, color='black',linewidth=0.5, ls='--')
-    plt.gca().set_aspect('equal', adjustable='box')
-    plt.show()    
-    
-
     input("Press Enter to continue...")
     
 
