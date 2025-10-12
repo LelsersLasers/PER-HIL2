@@ -212,13 +212,16 @@ def parse_can_messages(
     # ]
     v = []
     for values in ser.get_parsed_can_messages(bus):
-        signal = (values[1] << 24) | (values[2] << 16) | (values[3] << 8) | values[4]
+        # signal = (values[1] << 24) | (values[2] << 16) | (values[3] << 8) | values[4]
+        signal = ((values[1] << 24) | (values[2] << 16) | (values[3] << 8) | values[4]) & 0x1FFFFFFF
         data = values[6 : 6 + values[5]]
         try:
+            expected_msg = can_dbc.get_message_by_id(signal)
+            logging.debug(f"Expected CAN message: {expected_msg}")
             decoded = can_dbc.decode_message(signal, data)
             v.append(can_helper.CanMessage(signal, decoded))
-        except Exception as e:
-            logging.error(f"Failed to decode CAN message with ID {signal}: {e}")
+        except Exception:
+            logging.error(f"Failed to decode CAN message with ID {signal}")
     return v
 
 
