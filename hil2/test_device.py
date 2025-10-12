@@ -496,11 +496,9 @@ class TestDevice:
         """
         raw_data = list(can_dbc.encode_message(signal, data))
         if isinstance(signal, int):
-            msg_id = signal
-            message = can_dbc.get_message_by_frame_id(msg_id)
+            msg_id = can_dbc.get_message_by_frame_id(signal).frame_id
         else:
-            message = can_dbc.get_message_by_name(signal)
-            msg_id = message.frame_id
+            msg_id = can_dbc.get_message_by_name(signal).frame_id
 
         match self._ser:
             case None:
