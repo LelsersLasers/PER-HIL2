@@ -212,6 +212,12 @@ def can_send_test(h: hil2.Hil2):
         else:
             val = 0
         print("Sent CAN message: start_button")
+
+        last_msgs = vcan.get_all()
+        for msg in last_msgs:
+            print(f"Last CAN message: ID={msg.signal}, Data={msg.data}")
+        vcan.clear()
+
         time.sleep(1)
 
 
