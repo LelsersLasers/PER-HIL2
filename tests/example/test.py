@@ -184,22 +184,28 @@ def ao_ai_test(h: hil2.Hil2):
     #     input("Press Enter to continue...")
 
 def can_recv_test(h: hil2.Hil2):
-    mcan = h.can("HIL2", "VCAN")
+    vcan = h.can("HIL2", "VCAN")
+    mcan = h.can("HIL2", "MCAN")
 
-    print("Listening for CAN messages on VCAN...")
+    print("Listening for CAN messages on VCAN and MCAN...")
     while True:
+        msg = vcan.get_last()
+        if msg is not None:
+            print(f"Received CAN message: ID={msg['id']}, Data={msg['data']}")
+            vcan.clear()
         msg = mcan.get_last()
         if msg is not None:
             print(f"Received CAN message: ID={msg['id']}, Data={msg['data']}")
             mcan.clear()
+        time.sleep(0.1)
 
         
 def can_send_test(h: hil2.Hil2):
-    mcan = h.can("HIL2", "VCAN")
+    vcan = h.can("HIL2", "VCAN")
 
     print("Sending CAN messages on VCAN...")
     while True:
-        mcan.send("BrakeLeft", { "raw_reading": 12 })
+        vcan.send("BrakeLeft", { "raw_reading": 12 })
         print("Sent BrakeLeft message with raw_reading=12")
         time.sleep(1)
 
