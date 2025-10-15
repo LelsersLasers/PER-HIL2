@@ -20,9 +20,9 @@ WRITE_DAC  = 4  # command, pin/offset, value -> []
 HIZ_DAC    = 5  # command, pin/offset        -> []
 READ_ADC   = 6  # command, pin               -> READ_ADC, value high, value low
 WRITE_POT  = 7  # command, pin/offset, value -> []
-SEND_CAN   = 8  # command, bus, signal high, signal low, length, data (8 bytes) -> []
-RECV_CAN   = 9  # <async>                    -> CAN_MESSAGE, bus, signal high,
-                #                               signal low, length, data (length bytes)
+SEND_CAN   = 8  # command, bus, signal bytes: 3-0, length, data (8 bytes) -> []
+RECV_CAN   = 9  # <async>                    -> CAN_MESSAGE, bus, signal bytes: 3-0,
+                #                               length, data (length bytes)
 ERROR      = 10 # <async/any>                -> ERROR, command
 # fmt: on
 
@@ -40,6 +40,7 @@ def read_id(ser_raw: serial.Serial) -> Optional[int]:
     """
     command = [READ_ID]
     logging.debug(f"Sending - READ_ID: {command}")
+    ser_raw.reset_input_buffer()
     ser_raw.write(bytearray(command))
     try:
         response = ser_raw.read(2)  # Read command byte and ID byte
@@ -65,6 +66,7 @@ def write_gpio(ser: serial_helper.ThreadedSerial, pin: int, value: bool) -> None
     command = [WRITE_GPIO, pin, int(value)]
     logging.debug(f"Sending - WRITE_GPIO: {command}")
     ser.write(bytearray(command))
+
 
 def hiZ_gpio(ser: serial_helper.ThreadedSerial, pin: int) -> None:
     """
@@ -184,12 +186,25 @@ def send_can(
     :param signal: The CAN signal ID.
     :param data: The data to send (up to 8 bytes). When sent, will be padded with zeros.
     """
-    signal_high = (signal >> 8) & 0xFF
-    signal_low = signal & 0xFF
+    signal_3 = (signal >> 24) & 0xFF
+    signal_2 = (signal >> 16) & 0xFF
+    signal_1 = (signal >> 8) & 0xFF
+    signal_0 = signal & 0xFF
     length = len(data)
     padding = [0] * (8 - len(data))
-    command = [SEND_CAN, bus, signal_high, signal_low, length, *data, *padding]
+    command = [
+        SEND_CAN,
+        bus,
+        signal_3,
+        signal_2,
+        signal_1,
+        signal_0,
+        length,
+        *data,
+        *padding,
+    ]
     logging.debug(f"Sending - SEND_CAN: {command}")
+    print(f"Sending - SEND_CAN: {command}")
     ser.write(bytearray(command))
 
 
@@ -204,10 +219,23 @@ def parse_can_messages(
     :param can_dbc: The DBC database to use for decoding messages.
     :return: A list of parsed CAN messages.
     """
+
+    def decode(values):
+        signal = (
+            (values[1] << 24) | (values[2] << 16) | (values[3] << 8) | values[4]
+        ) & 0x1FFFFFFF
+        data = bytes(values[6 : 6 + values[5]])
+        try:
+            decoded = can_dbc.decode_message(signal, data)
+            return can_helper.CanMessage(signal, decoded)
+        except Exception as e:
+            logging.error(f"Failed to decode CAN message with ID {signal} ({e})")
+            return None
+
     return [
-        can_helper.CanMessage(signal, can_dbc.decode_message(signal, data))
+        msg
         for values in ser.get_parsed_can_messages(bus)
-        for signal, data in [((values[1] << 8) | values[2], values[4 : 4 + values[3]])]
+        if (msg := decode(values)) is not None
     ]
 
 
@@ -247,17 +275,18 @@ def parse_readings(
             logging.debug(f"Parsed - READ_ADC: {value_high}, {value_low}")
             parsed_readings[READ_ADC] = [value_high, value_low]
             return True, rest
-        case [cmd, bus, signal_high, signal_low, length, *rest] if (
+        case [cmd, bus, signal_3, signal_2, signal_1, signal_0, length, *rest] if (
             cmd == RECV_CAN and len(rest) >= length
         ):
             logging.debug(
-                f"Parsed - RECV_CAN: {bus}, {signal_high}, {signal_low}, {length}"
+                f"Parsed - RECV_CAN: {bus}, {signal_3}, {signal_2}, {signal_1}, "
+                + f"{signal_0}, {length}, {rest[:length]}"
             )
             data, remaining = rest[:length], rest[length:]
             if bus not in parsed_can_messages:
                 parsed_can_messages[bus] = []
             parsed_can_messages[bus].append(
-                [bus, signal_high, signal_low, length, *data]
+                [bus, signal_3, signal_2, signal_1, signal_0, length, *data]
             )
             return True, remaining
         case [cmd, command, *rest] if cmd == ERROR:

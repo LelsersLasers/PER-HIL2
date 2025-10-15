@@ -17,9 +17,7 @@ const int TESTER_ID = 1;
 
 // DAC conf ------------------------------------------------------------------//
 #define NUM_DACS 8
-#define DAC_WIRE Wire
-#define DAC_SDA 17
-#define DAC_SCL 24
+#define DAC_WIRE Wire2
 #define DAC_BASE_ADDR 0x60
 //----------------------------------------------------------------------------//
 
@@ -27,12 +25,7 @@ const int TESTER_ID = 1;
 #define NUM_DIGIPOTS 2
 
 #define DIGIPOT_0_WIRE Wire1
-#define DIGIPOT_0_SDA 25
-#define DIGIPOT_0_SCL 16
-
-#define DIGIPOT_1_WIRE Wire2
-#define DIGIPOT_1_SDA 18
-#define DIGIPOT_1_SCL 19
+#define DIGIPOT_1_WIRE Wire
 
 const uint8_t DIGIPOT_MAX_STEPS = 128;
 const float DIGIPOT_MAX_OHMS = 10000;
@@ -57,7 +50,7 @@ MCP4017 digipots[NUM_DIGIPOTS] = {
   MCP4017(DIGIPOT_MAX_STEPS, DIGIPOT_MAX_OHMS) 
 };
 
-FlexCAN_T4<CAN1, CAN_RX, CAN_TX> vCan; // bus: 1
+FlexCAN_T4<CAN2, CAN_RX, CAN_TX> vCan; // bus: 1
 FlexCAN_T4<CAN3, CAN_RX, CAN_TX> mCan; // bus: 2
 CAN_message_t recv_msg = { 0 };
 //----------------------------------------------------------------------------//
@@ -73,8 +66,8 @@ enum SerialCommand : uint8_t {
     HIZ_DAC    = 5,  // command, pin/offset        -> []
     READ_ADC   = 6,  // command, pin               -> READ_ADC, value high, value low
     WRITE_POT  = 7,  // command, pin/offset, value -> []
-    SEND_CAN   = 8,  // command, bus, signal high, signal low, length, data (8 bytes) -> []
-    RECV_CAN   = 9,  // <async>                    -> CAN_MESSAGE, bus, signal high, signal low, length, data (length bytes)
+    SEND_CAN   = 8,  // command, bus, signal bytes: 3-0, length, data (8 bytes) -> []
+    RECV_CAN   = 9,  // <async>                    -> CAN_MESSAGE, bus, signal bytes: 3-0, length, data (length bytes)
     ERROR      = 10, // <async/any>                -> ERROR, command
 };
 
@@ -87,7 +80,7 @@ size_t TO_READ[] = { // Parrallel to SerialCommand
     2,  // HIZ_DAC
     2,  // READ_ADC
     3,  // WRITE_POT
-    13, // SEND_CAN
+    15, // SEND_CAN
 };
 
 // 13 = max(TO_READ)
@@ -103,9 +96,6 @@ void setup() {
     SERIAL_CON.begin(SERIAL_BAUDRATE);
 
     // DAC setup
-    DAC_WIRE.setSDA(DAC_SDA);
-    DAC_WIRE.setSCL(DAC_SCL);
-
     for (int i = 0; i < NUM_DACS; i++) {
         uint8_t addr = DAC_BASE_ADDR + i;
         dacs[i].begin(addr, DAC_WIRE);
@@ -113,24 +103,21 @@ void setup() {
         dacs[i].setMode(MCP4706_PWRDN_500K);
         dac_power_down[i] = true; // start with power down
     }
+    DAC_WIRE.begin();
 
     // Digipot setup
-    DIGIPOT_0_WIRE.setSDA(DIGIPOT_0_SDA);
-    DIGIPOT_0_WIRE.setSCL(DIGIPOT_0_SCL);
     digipots[0].begin(MCP4017ADDRESS, DIGIPOT_0_WIRE);
+    DIGIPOT_0_WIRE.begin();
 
-    DIGIPOT_1_WIRE.setSDA(DIGIPOT_1_SDA);
-    DIGIPOT_1_WIRE.setSCL(DIGIPOT_1_SCL);
     digipots[1].begin(MCP4017ADDRESS, DIGIPOT_1_WIRE);
+    DIGIPOT_1_WIRE.begin();
 
     // CAN setup
     vCan.begin();
     vCan.setBaudRate(CAN_BAUDRATE);
-    vCan.enableFIFO();
 
     mCan.begin();
     mCan.setBaudRate(CAN_BAUDRATE);
-    mCan.enableFIFO();
 }
 //----------------------------------------------------------------------------//
 
@@ -140,6 +127,20 @@ void send_error(uint8_t command) {
     SERIAL_CON.write(command);
 }
 //----------------------------------------------------------------------------//
+
+// CAN -----------------------------------------------------------------------//
+void send_can(uint8_t bus) {
+    SERIAL_CON.write(RECV_CAN);                   // cmd
+    SERIAL_CON.write(bus);                        // bus 
+    SERIAL_CON.write((recv_msg.id >> 24) & 0xFF); // signal byte 3
+    SERIAL_CON.write((recv_msg.id >> 16) & 0xFF); // signal byte 2
+    SERIAL_CON.write((recv_msg.id >> 8) & 0xFF);  // signal byte 1
+    SERIAL_CON.write(recv_msg.id & 0xFF);         // signal byte 0
+    SERIAL_CON.write(recv_msg.len);               // length
+    SERIAL_CON.write(recv_msg.buf, recv_msg.len); // data
+}
+//----------------------------------------------------------------------------//
+
 
 // Loop ----------------------------------------------------------------------//
 void loop() {
@@ -172,7 +173,7 @@ void loop() {
             pinMode(pin, INPUT);
             int val = digitalRead(pin);
             SERIAL_CON.write(SerialCommand::READ_GPIO);
-            SERIAL_CON.write(val & 0xFF);
+            SERIAL_CON.write(val);
             break;
         }
         case SerialCommand::WRITE_DAC: {
@@ -225,14 +226,19 @@ void loop() {
         }
         case SerialCommand::SEND_CAN: {
             uint8_t bus = g_serial_data[1];
-            uint16_t signal = (g_serial_data[2] << 8) | g_serial_data[3]; // 11-bit ID
-            uint8_t length = g_serial_data[4];
+            uint32_t signal = (static_cast<uint32_t>(g_serial_data[2]) << 24) |
+                    (static_cast<uint32_t>(g_serial_data[3]) << 16) |
+                    (static_cast<uint32_t>(g_serial_data[4]) << 8)  |
+                    static_cast<uint32_t>(g_serial_data[5]);
+            signal &= 0x1FFFFFFF; // mask to 29 bits
+            signal |= 0x80000000; // set extended flag
+            uint8_t length = g_serial_data[6];
             CAN_message_t msg = { 0 };
             msg.id = signal;
             msg.len = length;
-            memcpy(msg.buf, &g_serial_data[5], length);
+            memcpy(msg.buf, &g_serial_data[7], length);
             msg.len = length;
-            msg.flags.extended = false; 
+            msg.flags.extended = true;
 
             if (bus == VCAN_BUS) {
                 vCan.write(msg);
@@ -258,19 +264,9 @@ void loop() {
             g_data_ready = true;
         }
     } else if (vCan.read(recv_msg)) {
-        SERIAL_CON.write(RECV_CAN);
-        SERIAL_CON.write(VCAN_BUS);                   // bus 1
-        SERIAL_CON.write((recv_msg.id >> 8) & 0xFF);  // signal high
-        SERIAL_CON.write(recv_msg.id & 0xFF);         // signal low
-        SERIAL_CON.write(recv_msg.len);               // length
-        SERIAL_CON.write(recv_msg.buf, recv_msg.len); // g_serial_data
+        send_can(VCAN_BUS);
     } else if (mCan.read(recv_msg)) {
-        SERIAL_CON.write(RECV_CAN);
-        SERIAL_CON.write(MCAN_BUS);                   // bus 2
-        SERIAL_CON.write((recv_msg.id >> 8) & 0xFF);  // signal high
-        SERIAL_CON.write(recv_msg.id & 0xFF);         // signal low
-        SERIAL_CON.write(recv_msg.len);               // length
-        SERIAL_CON.write(recv_msg.buf, recv_msg.len); // data
+        send_can(MCAN_BUS);
     }
 }
 //----------------------------------------------------------------------------//
