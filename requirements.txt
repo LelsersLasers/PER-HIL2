@@ -1,0 +1,3 @@
+cantools==36.2.0
+pyserial==3.5
+colorama==0.4.6
