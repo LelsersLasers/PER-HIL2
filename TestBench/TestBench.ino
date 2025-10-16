@@ -58,7 +58,7 @@ CAN_message_t recv_msg = { 0 };
 
 // Serial commands -----------------------------------------------------------//
 enum SerialCommand : uint8_t {
-    READ_ID    = 0,  // command                    -> READ_ID, id
+    READ_ID    = 0,  // command                    -> SYNC_BYTES (4), READ_ID, id
     WRITE_GPIO = 1,  // command, pin, value        -> []
     HIZ_GPIO   = 2,  // command, pin               -> []
     READ_GPIO  = 3,  // command, pin               -> READ_GPIO, value
@@ -70,6 +70,7 @@ enum SerialCommand : uint8_t {
     RECV_CAN   = 9,  // <async>                    -> CAN_MESSAGE, bus, signal bytes: 3-0, length, data (length bytes)
     ERROR      = 10, // <async/any>                -> ERROR, command
 };
+const uint8_t SYNC_BYTES[] = {0xDE, 0xAD, 0xBE, 0xEF};
 
 size_t TO_READ[] = { // Parrallel to SerialCommand
     1,  // READ_ID
@@ -152,6 +153,7 @@ void loop() {
 
         switch (command) {
         case SerialCommand::READ_ID: {
+            SERIAL_CON.write(SYNC_BYTES, sizeof(SYNC_BYTES));
             SERIAL_CON.write(SerialCommand::READ_ID);
             SERIAL_CON.write(TESTER_ID);
             break;

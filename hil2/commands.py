@@ -1,5 +1,6 @@
 from typing import Optional
 
+import time
 import logging
 
 import cantools.database.can.database as cantools_db
@@ -12,7 +13,7 @@ from . import serial_helper
 
 # Command constants -------------------------------------------------------------------#
 # fmt: off
-READ_ID    = 0  # command                    -> READ_ID, id
+READ_ID    = 0  # command                    -> SYNC_BYTES (4), READ_ID, id
 WRITE_GPIO = 1  # command, pin, value        -> []
 HIZ_GPIO   = 2  # command, pin               -> []
 READ_GPIO  = 3  # command, pin               -> READ_GPIO, value
@@ -21,34 +22,61 @@ HIZ_DAC    = 5  # command, pin/offset        -> []
 READ_ADC   = 6  # command, pin               -> READ_ADC, value high, value low
 WRITE_POT  = 7  # command, pin/offset, value -> []
 SEND_CAN   = 8  # command, bus, signal bytes: 3-0, length, data (8 bytes) -> []
-RECV_CAN   = 9  # <async>                    -> CAN_MESSAGE, bus, signal bytes: 3-0,
+RECV_CAN   = 9  # <async>                    -> RECV_CAN, bus, signal bytes: 3-0,
                 #                               length, data (length bytes)
 ERROR      = 10 # <async/any>                -> ERROR, command
 # fmt: on
+
+READ_ID_RESPONSE_LENGTH = 6  # SYNC_BYTES (4) + READ_ID (1) + ID (1)
+SYNC_BYTES = [0xDE, 0xAD, 0xBE, 0xEF]
 
 SERIAL_RESPONSES = [READ_ID, READ_GPIO, READ_ADC, RECV_CAN, ERROR]
 
 
 # Simple commands ---------------------------------------------------------------------#
-def read_id(ser_raw: serial.Serial) -> Optional[int]:
+def read_id(
+    ser_raw: serial.Serial, response_wait: float
+) -> Optional[tuple[int, list[int]]]:
     """
-    Attempts to read the HIL ID from a device.
+    Attempts to connect and read the HIL ID from a device.
     Sends a READ_ID command and waits for a response.
 
     :param ser_raw: The raw serial connection to use (raw Serial object).
-    :return: The HIL ID if read successfully, None otherwise.
+    :return: The HIL ID and any bytes received after the ID, or None if not a HIL device.
     """
     command = [READ_ID]
     logging.debug(f"Sending - READ_ID: {command}")
     ser_raw.reset_input_buffer()
     ser_raw.write(bytearray(command))
+    read_buffer = []
+
     try:
-        response = ser_raw.read(2)  # Read command byte and ID byte
-        if len(response) < 2 or response[0] != READ_ID:
-            return None
-        read_hil_id = response[1]
-        logging.debug(f"Received - READ_ID: {read_hil_id}")
-        return read_hil_id
+        start_time = time.time()
+
+        while time.time() - start_time < response_wait:
+            to_read = max(ser_raw.in_waiting, 1)
+            chunk = ser_raw.read(to_read)
+            if not chunk:
+                continue
+            read_buffer.extend([int(b) for b in chunk])
+
+            if len(read_buffer) >= READ_ID_RESPONSE_LENGTH:
+                # Look for SYNC_BYTES in the buffer
+                for i in range(len(read_buffer) - 5):
+                    if read_buffer[i : i + 4] == SYNC_BYTES:
+                        logging.debug(f"SYNC_BYTES found at position {i}")
+                        # Check if the next byte is READ_ID
+                        if read_buffer[i + 4] == READ_ID:
+                            read_hil_id = read_buffer[i + 5]
+                            remaining_bytes = read_buffer[i + 6 :]
+                            logging.debug(
+                                f"Received - READ_ID: {read_hil_id},"
+                                f"remaining bytes: {len(remaining_bytes)}"
+                            )
+                            return read_hil_id, remaining_bytes
+                # If SYNC_BYTES not found, remove bytes before the last 3 bytes
+                read_buffer = read_buffer[-3:]
+
     except serial.SerialException as e:
         logging.error(f"Serial exception occurred: {e}")
         return None

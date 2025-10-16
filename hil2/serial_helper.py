@@ -13,19 +13,21 @@ from . import hil_errors
 SERIAL_BAUDRATE = 115200
 SERIAL_TIMEOUT = 0.1
 SERIAL_RETRIES = 5
+RESPONSE_WAIT = 0.2
 
 GET_TIMEOUT = 0.1
 SLEEP_INTERVAL = 0.01
 
 
 # Discover ----------------------------------------------------------------------------#
-def discover_devices(hil_ids: list[int]) -> dict[int, serial.Serial]:
+def discover_devices(hil_ids: list[int]) -> dict[int, tuple[serial.Serial, list[int]]]:
     """
     Attempts to find HIL devices by sending an identification command to each serial
     port.
 
     :param hil_ids: A list of expected HIL device IDs
     :return: A dictionary mapping discovered HIL device IDs to their serial connections
+             and any extra readings (that need to be parsed)
     """
 
     devices = {}
@@ -56,13 +58,17 @@ def discover_devices(hil_ids: list[int]) -> dict[int, serial.Serial]:
 
         # Need to give a little time
         for _ in range(SERIAL_RETRIES):
-            read_hil_id = commands.read_id(serial_con)
-            if read_hil_id is not None and read_hil_id in hil_ids:
-                devices[read_hil_id] = serial_con
-                logging.info(
-                    f"Discovered HIL device with ID {read_hil_id} on port {cp}"
-                )
-                break
+            match commands.read_id(serial_con, RESPONSE_WAIT):
+                case None:
+                    pass
+                case (read_hil_id, extra_readings) if read_hil_id in hil_ids:
+                    devices[read_hil_id] = (serial_con, extra_readings)
+                    logging.info(
+                        f"Discovered HIL device with ID {read_hil_id} on port {cp}"
+                    )
+                    break
+                case _:
+                    logging.debug(f"Found non-matching HIL ID on port {cp}")
             time.sleep(1)
         else:
             # If it is not a HIL device, close it
@@ -85,7 +91,12 @@ class ThreadedSerial:
     command and response.
     """
 
-    def __init__(self, serial_con: serial.Serial, stop_event: threading.Event):
+    def __init__(
+        self,
+        serial_con: serial.Serial,
+        readings: list[int],
+        stop_event: threading.Event,
+    ):
         """
         :param serial_con: The serial connection to the HIL device
         :param stop_event: The event used to signal the thread to stop
@@ -93,8 +104,9 @@ class ThreadedSerial:
         self.serial_con: serial.Serial = serial_con
         self.stop_event: threading.Event = stop_event
 
-        # Raw readings from the serial port
-        self.readings: list[int] = []
+        # Raw readings from the serial port. Some bytes may have been already read when
+        # discovering the device.
+        self.readings: list[int] = readings
 
         # Parsed readings. The key is the command (ex: READ_GPIO) and the value is the
         # list of bytes
@@ -105,6 +117,11 @@ class ThreadedSerial:
 
         # Lock for synchronizing access to shared resources
         self.lock = threading.Lock()
+
+        if len(self.readings) > 0:
+            # If there are any initial readings, try to process them
+            with self.lock:
+                self._process_readings()
 
     def write(self, data: bytes) -> None:
         """

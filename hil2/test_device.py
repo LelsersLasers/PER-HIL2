@@ -693,17 +693,14 @@ class TestDeviceManager:
 
         hil_devices = serial_helper.discover_devices(hil_ids)
 
-        sers = dict(
-            map(
-                lambda hil_id: (
-                    hil_id,
-                    serial_helper.ThreadedSerial(
-                        hil_devices[hil_id], stop_events[hil_id]
-                    ),
-                ),
-                hil_ids,
+        sers = {
+            hil_id: serial_helper.ThreadedSerial(
+                hil_devices[hil_id][0],
+                hil_devices[hil_id][1],
+                stop_events[hil_id],
             )
-        )
+            for hil_id in hil_ids
+        }
         for test_device in test_devices.values():
             ser = sers[test_device.hil_id]
             t = threading.Thread(target=ser.run)
