@@ -7,10 +7,16 @@ Rewritting HIL 2 from scratch because I have nothing but time and other things I
 - `./TestBench`: the Teensy code
 - `./hil2`: the main HIL "engine"
 - `./mk_assert`: a simple and low magic test framework
-- `./tests`: the test scripts and configuration files
 - `./device_configs`: the device configuration files
+- `./tests`: the test scripts and configuration files
 
 ## Python libraries
+
+To install the required Python libraries, run:
+
+```bash
+pip install -r requirements.txt
+```
 
 - `pyserial` for serial communication
 - `cantools` for CAN DBC encoding/decoding
