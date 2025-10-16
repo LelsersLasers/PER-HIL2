@@ -91,59 +91,59 @@ class SetPot:
 class SendCan:
     """Action to send a CAN message"""
 
-    __match_args__ = ("signal", "data", "can_dbc")
+    __match_args__ = ("signal", "data", "can_dbcs")
 
-    def __init__(self, signal: str | int, data: dict, can_dbc: cantools_db.Database):
+    def __init__(self, signal: str | int, data: dict, can_dbcs: cantools_db.Database):
         """
         :param signal: The signal name or message ID to send
         :param data: The data to include in the CAN message. Will be encoded to bytes
-        :param can_dbc: The CAN database to use for encoding the message
+        :param can_dbcs: The CAN database to use for encoding the message
         """
         self.signal: str | int = signal
         self.data: dict = data
-        self.can_dbc: cantools_db.Database = can_dbc
+        self.can_dbcs: cantools_db.Database = can_dbcs
 
 
 class GetLastCan:
     """Action to get the last received CAN message"""
 
-    __match_args__ = ("signal", "can_dbc")
+    __match_args__ = ("signal", "can_dbcs")
 
-    def __init__(self, signal: Optional[str | int], can_dbc: cantools_db.Database):
+    def __init__(self, signal: Optional[str | int], can_dbcs: cantools_db.Database):
         """
         :param signal: The signal name or message ID to get. If not specified, the last
                        message will be returned (if any) regardless of the signal/id
-        :param can_dbc: The CAN database to use for decoding the message
+        :param can_dbcs: The CAN database to use for decoding the message
         """
         self.signal: Optional[str | int] = signal
-        self.can_dbc: cantools_db.Database = can_dbc
+        self.can_dbcs: cantools_db.Database = can_dbcs
 
 
 class GetAllCan:
     """Action to get all received CAN messages"""
 
-    __match_args__ = ("signal", "can_dbc")
+    __match_args__ = ("signal", "can_dbcs")
 
-    def __init__(self, signal: Optional[str | int], can_dbc: cantools_db.Database):
+    def __init__(self, signal: Optional[str | int], can_dbcs: cantools_db.Database):
         """
         :param signal: The signal name or message ID to get. If not specified, all
                        messages will be returned (if any) regardless of the signal/id
-        :param can_dbc: The CAN database to use for decoding the messages
+        :param can_dbcs: The CAN database to use for decoding the messages
         """
         self.signal: Optional[str | int] = signal
-        self.can_dbc: cantools_db.Database = can_dbc
+        self.can_dbcs: cantools_db.Database = can_dbcs
 
 
 class ClearCan:
     """Action to clear a CAN message"""
 
-    __match_args__ = ("signal", "can_dbc")
+    __match_args__ = ("signal", "can_dbcs")
 
-    def __init__(self, signal: Optional[str | int], can_dbc: cantools_db.Database):
+    def __init__(self, signal: Optional[str | int], can_dbcs: cantools_db.Database):
         """
         :param signal: The signal name or message ID to clear. If not specified, all
                        messages will be cleared (if any) regardless of the signal/id
-        :param can_dbc: The CAN database to use for decoding the messages
+        :param can_dbcs: The CAN database to use for decoding the messages
         """
         self.signal: Optional[str | int] = signal
-        self.can_dbc: cantools_db.Database = can_dbc
+        self.can_dbcs: cantools_db.Database = can_dbcs
