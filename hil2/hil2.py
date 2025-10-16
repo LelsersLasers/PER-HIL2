@@ -39,7 +39,7 @@ class Hil2:
         self._maybe_net_map: Optional[net_map.NetMap] = (
             None if net_map_path is None else net_map.NetMap.from_csv(net_map_path)
         )
-        self._can_dbc: Optional[cantools_db.Database] = (
+        self._can_dbcs: Optional[dict[str, cantools_db.Database]] = (
             None
             if can_dbc_fpath is None
             else can_helper.load_can_dbcs(os.path.join(can_dbc_fpath))
@@ -270,12 +270,12 @@ class Hil2:
         :param signal: The signal identifier or message id
         :param data: The data to send. Will be encoded to raw bytes
         """
-        match self._can_dbc:
+        match self._can_dbcs:
             case None:
                 raise hil_errors.ConfigurationError("CAN DBC not configured")
-            case can_dbc:
+            case can_dbcs:
                 self._test_device_manager.do_action(
-                    action.SendCan(signal, data, can_dbc),
+                    action.SendCan(signal, data, can_dbcs),
                     self._test_device_manager.maybe_hil_con_from_net(
                         hil_board, can_bus
                     ),
@@ -293,12 +293,12 @@ class Hil2:
                        message for any signal will be returned.
         :return: The last received CAN message or None if not found
         """
-        match self._can_dbc:
+        match self._can_dbcs:
             case None:
                 raise hil_errors.ConfigurationError("CAN DBC not configured")
-            case can_dbc:
+            case can_dbcs:
                 return self._test_device_manager.do_action(
-                    action.GetLastCan(signal, can_dbc),
+                    action.GetLastCan(signal, can_dbcs),
                     self._test_device_manager.maybe_hil_con_from_net(
                         hil_board, can_bus
                     ),
@@ -316,12 +316,12 @@ class Hil2:
                        messages for any signal will be returned.
         :return: A list of all received CAN messages
         """
-        match self._can_dbc:
+        match self._can_dbcs:
             case None:
                 raise hil_errors.ConfigurationError("CAN DBC not configured")
-            case can_dbc:
+            case can_dbcs:
                 return self._test_device_manager.do_action(
-                    action.GetAllCan(signal, can_dbc),
+                    action.GetAllCan(signal, can_dbcs),
                     self._test_device_manager.maybe_hil_con_from_net(
                         hil_board, can_bus
                     ),
@@ -338,12 +338,12 @@ class Hil2:
         :param signal: The signal identifier or message id. If not specified, all
                        messages for any signal will be cleared.
         """
-        match self._can_dbc:
+        match self._can_dbcs:
             case None:
                 raise hil_errors.ConfigurationError("CAN DBC not configured")
-            case can_dbc:
+            case can_dbcs:
                 self._test_device_manager.do_action(
-                    action.ClearCan(signal, can_dbc),
+                    action.ClearCan(signal, can_dbcs),
                     self._test_device_manager.maybe_hil_con_from_net(
                         hil_board, can_bus
                     ),

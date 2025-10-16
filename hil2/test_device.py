@@ -219,11 +219,30 @@ class CanBus:
         :param can_bus: The CAN bus configuration dictionary
         """
         match can_bus:
-            case {"name": name, "bus": bus}:
+            case {"name": name, "bus": bus, "dbc_file": dbc_file}:
                 self.name: str = name
                 self.bus: int = bus
+                self.dbc_file: str = dbc_file
             case _:
                 raise hil_errors.ConfigurationError("Invalid CAN Bus configuration")
+
+    def find_dbc(
+        self, can_dbcs: dict[str, cantools_db.Database]
+    ) -> cantools_db.Database:
+        """
+        Attempt to find the CAN DBC database for this CAN bus. If not found, raise an error.
+
+        :param can_dbcs: The dictionary of loaded CAN databases, keyed by DBC file name
+        :return: The CAN database if found
+        """
+        match can_dbcs.get(self.dbc_file, None):
+            case None:
+                error_msg = (
+                    f"DBC file {self.dbc_file} not found for CAN bus {self.name}"
+                )
+                raise hil_errors.ConfigurationError(error_msg)
+            case db:
+                return db
 
 
 # Test device -------------------------------------------------------------------------#
@@ -585,19 +604,23 @@ class TestDevice:
             ):
                 self._set_pot(mp.port, value)
             # Send CAN msg + can bus name
-            case (action.SendCan(signal, data, can_dbc), _, _, mcb) if mcb is not None:
+            case (action.SendCan(signal, data, can_dbcs), _, _, mcb) if mcb is not None:
+                can_dbc = mcb.find_dbc(can_dbcs)
                 self._update_can_messages(mcb.bus, can_dbc)
                 self._send_can(mcb.bus, signal, data, can_dbc)
             # Get last CAN msg + can bus name
-            case (action.GetLastCan(signal, can_dbc), _, _, mcb) if mcb is not None:
+            case (action.GetLastCan(signal, can_dbcs), _, _, mcb) if mcb is not None:
+                can_dbc = mcb.find_dbc(can_dbcs)
                 self._update_can_messages(mcb.bus, can_dbc)
                 return self.device_can_busses[mcb.bus].get_last(signal)
             # Get all CAN msgs + can bus name
-            case (action.GetAllCan(signal, can_dbc), _, _, mcb) if mcb is not None:
+            case (action.GetAllCan(signal, can_dbcs), _, _, mcb) if mcb is not None:
+                can_dbc = mcb.find_dbc(can_dbcs)
                 self._update_can_messages(mcb.bus, can_dbc)
                 return self.device_can_busses[mcb.bus].get_all(signal)
             # Clear CAN msgs + can bus name
-            case (action.ClearCan(signal, can_dbc), _, _, mcb) if mcb is not None:
+            case (action.ClearCan(signal, can_dbcs), _, _, mcb) if mcb is not None:
+                can_dbc = mcb.find_dbc(can_dbcs)
                 self._update_can_messages(mcb.bus, can_dbc)
                 self.device_can_busses[mcb.bus].clear(signal)
             # Unsupported action
@@ -650,9 +673,7 @@ class TestDeviceManager:
                             "id": hil_id,
                             "name": name,
                             "config": config_file_name,
-                        } if (
-                            not hil_id in hil_ids
-                        ):
+                        } if (not hil_id in hil_ids):
                             hil_ids.append(hil_id)
                             stop_events[hil_id] = threading.Event()
                             test_devices[name] = TestDevice.from_json(

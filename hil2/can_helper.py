@@ -7,35 +7,27 @@ import cantools.database.can.database as cantools_db
 
 
 # Helper functions --------------------------------------------------------------------#
-def load_can_dbcs(dbc_fpath: str, recursive: bool = False) -> cantools_db.Database:
+def load_can_dbcs(dbc_fpath: str) -> dict[str, cantools_db.Database]:
     """
-    Scans a folder (and optionally all subfolders) for DBC files and loads them into a
-    single CAN database.
+    Scans a folder for DBC files and loads them as CAN databases.
 
     :param dbc_fpath: The path to the CAN DBC folder
-    :param recursive: Whether to search subdirectories recursively (default: False)
-    :return: The loaded CAN database
+    :return: A dictionary of CAN databases, keyed by DBC file name
     """
-    db = cantools_db.Database()
+    dbs = {}
 
     if not dbc_fpath or not os.path.isdir(dbc_fpath):
         logging.warning(f"Invalid DBC folder path: {dbc_fpath}")
-        return db
-
-    if recursive:
-        for root, _, files in os.walk(dbc_fpath):
-            for file in files:
-                if file.endswith(".dbc"):
-                    logging.debug(f"Loading DBC file: {os.path.join(root, file)}")
-                    db.add_dbc_file(os.path.join(root, file))
+        return dbs
     else:
         for file in os.listdir(dbc_fpath):
             if file.endswith(".dbc"):
                 logging.debug(f"Loading DBC file: {os.path.join(dbc_fpath, file)}")
-                db.add_dbc_file(os.path.join(dbc_fpath, file))
-
-    if not db.messages:
-        logging.error(f"No DBC files found in folder: {dbc_fpath}")
+                db = cantools_db.load_file(os.path.join(dbc_fpath, file))
+                if db.messages:
+                    dbs[file] = db
+                else:
+                    logging.error(f"No messages found in DBC file: {file}")
 
     return db
 
