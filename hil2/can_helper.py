@@ -29,7 +29,7 @@ def load_can_dbcs(dbc_fpath: str) -> dict[str, cantools_db.Database]:
                 else:
                     logging.error(f"No messages found in DBC file: {file}")
 
-    return db
+    return dbs
 
 
 # CAN Message struct ------------------------------------------------------------------#
