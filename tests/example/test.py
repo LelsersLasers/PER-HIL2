@@ -213,8 +213,8 @@ def can_send_test(h: hil2.Hil2):
         else:
             val = 0
 
-        msg_ids = vcan.get_all()
-        msg_ids = set([msg.signal for msg in msg_ids])
+        msgs = vcan.get_all()
+        msg_ids = list(set([msg.signal for msg in msgs]))
         print(f"\tRECV: {msg_ids}")
         vcan.clear()
 
@@ -222,13 +222,13 @@ def can_send_test(h: hil2.Hil2):
 
 
 def main():
-    logging.basicConfig(level=logging.WARNING)
+    logging.basicConfig(level=logging.DEBUG)
     
     with hil2.Hil2(
         "./tests/example/config.json",
         "device_configs",
         None,
-        "/home/ronak/firmware/common/daq"
+        "/home/ronak/coding/PER/firmware/common/daq"
     ) as h:
         # mka.add_test(do_di_test, h)
         # mka.add_test(ao_ai_test, h)
