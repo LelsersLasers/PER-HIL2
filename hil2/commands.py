@@ -76,10 +76,11 @@ def read_id(
                             return read_hil_id, remaining_bytes
                 # If SYNC_BYTES not found, remove bytes before the last 3 bytes
                 read_buffer = read_buffer[-3:]
-
     except serial.SerialException as e:
         logging.error(f"Serial exception occurred: {e}")
         return None
+    
+    return None
 
 
 def write_gpio(ser: serial_helper.ThreadedSerial, pin: int, value: bool) -> None:
