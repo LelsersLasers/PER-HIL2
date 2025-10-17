@@ -59,6 +59,7 @@ def read_id(
             if not chunk:
                 continue
             read_buffer.extend([int(b) for b in chunk])
+            logging.debug(f"Read buffer: {read_buffer}")
 
             if len(read_buffer) >= READ_ID_RESPONSE_LENGTH:
                 # Look for SYNC_BYTES in the buffer
