@@ -3,7 +3,7 @@ from typing import Optional
 import os
 import logging
 
-import cantools.database.can.database as cantools_db
+import cantools.database as cantools_db
 
 
 # Helper functions --------------------------------------------------------------------#
@@ -14,7 +14,7 @@ def load_can_dbcs(dbc_fpath: str) -> dict[str, cantools_db.Database]:
     :param dbc_fpath: The path to the CAN DBC folder
     :return: A dictionary of CAN databases, keyed by DBC file name
     """
-    dbs = {}
+    dbs: dict[str, cantools_db.Database] = {}
 
     if not dbc_fpath or not os.path.isdir(dbc_fpath):
         logging.warning(f"Invalid DBC folder path: {dbc_fpath}")
