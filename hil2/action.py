@@ -93,15 +93,15 @@ class SendCan:
 
     __match_args__ = ("signal", "data", "can_dbcs")
 
-    def __init__(self, signal: str | int, data: dict, can_dbcs: cantools_db.Database):
+    def __init__(self, signal: str | int, data: dict, can_dbcs: dict[str, cantools_db.Database]):
         """
         :param signal: The signal name or message ID to send
         :param data: The data to include in the CAN message. Will be encoded to bytes
-        :param can_dbcs: The CAN database to use for encoding the message
+        :param can_dbcs: A dictionary of CAN databases, keyed by DBC file name
         """
         self.signal: str | int = signal
         self.data: dict = data
-        self.can_dbcs: cantools_db.Database = can_dbcs
+        self.can_dbcs: dict[str, cantools_db.Database] = can_dbcs
 
 
 class GetLastCan:
@@ -109,14 +109,14 @@ class GetLastCan:
 
     __match_args__ = ("signal", "can_dbcs")
 
-    def __init__(self, signal: Optional[str | int], can_dbcs: cantools_db.Database):
+    def __init__(self, signal: Optional[str | int], can_dbcs: dict[str, cantools_db.Database]):
         """
         :param signal: The signal name or message ID to get. If not specified, the last
                        message will be returned (if any) regardless of the signal/id
-        :param can_dbcs: The CAN database to use for decoding the message
+        :param can_dbcs: A dictionary of CAN databases, keyed by DBC file name
         """
         self.signal: Optional[str | int] = signal
-        self.can_dbcs: cantools_db.Database = can_dbcs
+        self.can_dbcs: dict[str, cantools_db.Database] = can_dbcs
 
 
 class GetAllCan:
@@ -124,14 +124,14 @@ class GetAllCan:
 
     __match_args__ = ("signal", "can_dbcs")
 
-    def __init__(self, signal: Optional[str | int], can_dbcs: cantools_db.Database):
+    def __init__(self, signal: Optional[str | int], can_dbcs: dict[str, cantools_db.Database]):
         """
         :param signal: The signal name or message ID to get. If not specified, all
                        messages will be returned (if any) regardless of the signal/id
-        :param can_dbcs: The CAN database to use for decoding the messages
+        :param can_dbcs: A dictionary of CAN databases, keyed by DBC file name
         """
         self.signal: Optional[str | int] = signal
-        self.can_dbcs: cantools_db.Database = can_dbcs
+        self.can_dbcs: dict[str, cantools_db.Database] = can_dbcs
 
 
 class ClearCan:
@@ -139,11 +139,11 @@ class ClearCan:
 
     __match_args__ = ("signal", "can_dbcs")
 
-    def __init__(self, signal: Optional[str | int], can_dbcs: cantools_db.Database):
+    def __init__(self, signal: Optional[str | int], can_dbcs: dict[str, cantools_db.Database]):
         """
         :param signal: The signal name or message ID to clear. If not specified, all
                        messages will be cleared (if any) regardless of the signal/id
-        :param can_dbcs: The CAN database to use for decoding the messages
+        :param can_dbcs: A dictionary of CAN databases, keyed by DBC file name
         """
         self.signal: Optional[str | int] = signal
-        self.can_dbcs: cantools_db.Database = can_dbcs
+        self.can_dbcs: dict[str, cantools_db.Database] = can_dbcs
