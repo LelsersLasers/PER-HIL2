@@ -77,7 +77,9 @@ def t_4_2_5_test(h: hil2.Hil2):
         check_msg(msg, 50.0, "Initial")
 
         all_msgs = vcan.get_all()
-        msg_ids = set([m.data for m in all_msgs])
+        for msg in all_msgs:
+            print(f"Received CAN message: ID={msg.signal}, Data={msg.data}")
+        # msg_ids = set([m. for m in all_msgs])
         # msg_ids = msg_ids - {MSG_NAME}
         print(f"Other CAN message IDs received on VCAN: {msg_ids}")
 
