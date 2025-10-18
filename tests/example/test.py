@@ -203,15 +203,15 @@ def can_recv_test(h: hil2.Hil2):
 def can_send_test(h: hil2.Hil2):
     vcan = h.can("HIL2", "VCAN")
 
-    print("Sending CAN messages on VCAN...")
-    val = 0
+    # print("Sending CAN messages on VCAN...")
+    # val = 0
     while True:
-        print(f"Sending CAN message: main_hb_amk, start: {val}")
-        vcan.send("main_hb_amk", { "precharge_state": 1, "car_state": val })
-        if val == 0:
-            val = 1
-        else:
-            val = 0
+        # print(f"Sending CAN message: main_hb_amk, start: {val}")
+        # vcan.send("main_hb_amk", { "precharge_state": 1, "car_state": val })
+        # if val == 0:
+        #     val = 1
+        # else:
+        #     val = 0
 
         msgs = vcan.get_all()
         msg_ids = list(set([msg.signal for msg in msgs]))
