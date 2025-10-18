@@ -81,7 +81,7 @@ def t_4_2_5_test(h: hil2.Hil2):
             print(f"Received CAN message: ID={msg.signal}, Data={msg.data}")
         # msg_ids = set([m. for m in all_msgs])
         # msg_ids = msg_ids - {MSG_NAME}
-        print(f"Other CAN message IDs received on VCAN: {msg_ids}")
+        # print(f"Other CAN message IDs received on VCAN: {msg_ids}")
 
         time.sleep(1.0)
 
