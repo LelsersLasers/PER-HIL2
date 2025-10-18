@@ -79,7 +79,7 @@ def t_4_2_5_test(h: hil2.Hil2):
         all_msgs = vcan.get_all()
         msg_ids = set([m.signal for m in all_msgs])
         msg_ids = msg_ids - {MSG_NAME}
-        logging.debug(f"Other CAN message IDs received on VCAN: {msg_ids}")
+        print(f"Other CAN message IDs received on VCAN: {msg_ids}")
 
         time.sleep(1.0)
 
