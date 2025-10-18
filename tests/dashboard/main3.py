@@ -92,7 +92,7 @@ def main():
         "./tests/dashboard/config.json",
         "device_configs",
         None,
-        "/home/ronak/coding/PER/firmware/common/daq"
+        "./tests/dashboard/dbc"
     ) as h:
         
         mka.add_test(t_4_2_5_test, h)
