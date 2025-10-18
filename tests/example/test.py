@@ -204,6 +204,10 @@ def can_send_test(h: hil2.Hil2):
     vcan = h.can("HIL2", "VCAN")
     mcan = h.can("HIL2", "MCAN")
 
+    brake1 = h.do("HIL2", "DO1")
+
+    brake1.set(True)
+
     # print("Sending CAN messages on VCAN...")
     # val = 0
     while True:
