@@ -57,9 +57,9 @@ def t_4_2_5_test(h: hil2.Hil2):
     """
     
     brake1 = h.do("HIL2", "DO1")
-    brake2 = h.do("HIL2", "DO2")
+    brake2 = h.do("HIL2", "DO5")
     throttle1 = h.ao("HIL2", "DAC3")
-    throttle2 = h.do("HIL2", "DO3")
+    throttle2 = h.do("HIL2", "DO9")
 
     vcan = h.can("HIL2", "VCAN")
 
@@ -87,7 +87,7 @@ def main():
         "./tests/dashboard/config.json",
         "device_configs",
         None,
-        "/home/ronak/firmware/common/daq"
+        "/home/ronak/coding/PER/firmware/common/daq"
     ) as h:
         
         mka.add_test(t_4_2_5_test, h)
