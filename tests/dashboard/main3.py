@@ -17,21 +17,31 @@ import logging
 # MSG_NAME = "raw_throttle_brake"
 MSG_NAME = 0x8A00000
 BRAKE_PERCENT = 0.0 # precent
-BRAKE_TOL = 2.0 # percent
-THROTTLE_TOL = 2.0 # percent
+BRAKE_TOL = 10
+THROTTLE_TOL = 10
 
-def check_msg(msg: Optional[can_helper.CanMessage], throttle_exp: float, test_prefix: str):
+BRAKE1_RAW = 300
+BRAKE2_RAW = 300
+THROTTLE2_RAW = 300
+THROTTLE1_V_TO_ADC = lambda v: (v / 5.0) * 4095
+
+def check_msg(msg: Optional[can_helper.CanMessage], v: float, test_prefix: str):
     mka.assert_true(msg is not None, f"{test_prefix}: VCAN message received")
     if msg is None:
         return
-
-    throttle = msg.data["throttle"]
+    
     brake = msg.data["brake"]
+    brake_right = msg.data["brake_right"]
+    throttle = msg.data["throttle"]
+    throttle_right = msg.data["throttle_right"]
 
-    # logging.info(f"{test_prefix}: throttle={throttle}, brake={brake}")
+    logging.info(f"{test_prefix}: throttle={throttle}, brake={brake}, throttle_right={throttle_right}, brake_right={brake_right}")
 
-    # mka.assert_eqf(throttle, throttle_exp, THROTTLE_TOL, f"{test_prefix}: throttle ({throttle}) should be approximately {throttle_exp}%")
-    # mka.assert_eqf(brake, BRAKE_PERCENT, BRAKE_TOL, f"{test_prefix}: brake ({brake}) should be approximately {BRAKE_PERCENT}%")
+    throttle_exp = THROTTLE1_V_TO_ADC(v)
+    mka.assert_eqf(brake, BRAKE1_RAW, BRAKE_TOL, f"{test_prefix}: brake ({brake}) should be approximately {BRAKE1_RAW}")
+    mka.assert_eqf(brake_right, BRAKE2_RAW, BRAKE_TOL, f"{test_prefix}: brake_right ({brake_right}) should be approximately {BRAKE2_RAW}")
+    mka.assert_eqf(throttle_right, THROTTLE2_RAW, THROTTLE_TOL, f"{test_prefix}: throttle_right ({throttle_right}) should be approximately {THROTTLE2_RAW}")
+    mka.assert_eqf(throttle, throttle_exp, THROTTLE_TOL, f"{test_prefix}: throttle ({throttle}) should be approximately {throttle_exp}")
 
 
 def t_4_2_5_test(h: hil2.Hil2):
@@ -71,20 +81,30 @@ def t_4_2_5_test(h: hil2.Hil2):
 
     input("Setup (brakes 0%, throttle 50%), press Enter to continue...")
 
-    while True:
+    check_msg(vcan.get_last(MSG_NAME), 2.5, "Initial")
+
+    # vcan.clear()
+    # time.sleep(0.02)
+    # msg = vcan.get_last(MSG_NAME)
+    # check_msg(msg, 50.0, "Initial")
+
+    # all_msgs = vcan.get_all()
+    # for msg in all_msgs:
+    #     print(f"Received CAN message: ID={msg.signal}, Data={msg.data}")
+    # # msg_ids = set([m. for m in all_msgs])
+    # # msg_ids = msg_ids - {MSG_NAME}
+    # # print(f"Other CAN message IDs received on VCAN: {msg_ids}")
+
+    for i in range(5, 46, 1):
         vcan.clear()
+        v = i / 10.0
+        throttle1.set(v)
         time.sleep(0.02)
+
         msg = vcan.get_last(MSG_NAME)
-        check_msg(msg, 50.0, "Initial")
+        check_msg(msg, v, f"Throttle set to {v}V")
 
-        all_msgs = vcan.get_all()
-        for msg in all_msgs:
-            print(f"Received CAN message: ID={msg.signal}, Data={msg.data}")
-        # msg_ids = set([m. for m in all_msgs])
-        # msg_ids = msg_ids - {MSG_NAME}
-        # print(f"Other CAN message IDs received on VCAN: {msg_ids}")
-
-        time.sleep(1.0)
+        time.sleep(0.2)
 
 
 # Main --------------------------------------------------------------------------------#
