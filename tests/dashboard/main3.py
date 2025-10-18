@@ -15,7 +15,7 @@ import time
 import logging
 
 # MSG_NAME = "raw_throttle_brake"
-MSG_NAME = 0x88A00000
+MSG_NAME = 144705536
 BRAKE_PERCENT = 0.0 # precent
 BRAKE_TOL = 10
 THROTTLE_TOL = 10
