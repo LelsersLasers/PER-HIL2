@@ -14,7 +14,8 @@ import mk_assert.mk_assert as mka
 import time
 import logging
 
-MSG_NAME = "raw_throttle_brake"
+# MSG_NAME = "raw_throttle_brake"
+MSG_NAME = 0x8A00800
 BRAKE_PERCENT = 0.0 # precent
 BRAKE_TOL = 2.0 # percent
 THROTTLE_TOL = 2.0 # percent
