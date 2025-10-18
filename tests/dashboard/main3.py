@@ -86,7 +86,7 @@ def t_4_2_5_test(h: hil2.Hil2):
 
 # Main --------------------------------------------------------------------------------#
 def main():
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
 
     with hil2.Hil2(
         "./tests/dashboard/config.json",
