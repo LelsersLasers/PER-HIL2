@@ -84,7 +84,7 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     with hil2.Hil2(
-        "./tests/dash/config.json",
+        "./tests/dashboard/config.json",
         "device_configs",
         None,
         "/home/ronak/firmware/common/daq"
