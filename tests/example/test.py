@@ -202,6 +202,7 @@ def can_recv_test(h: hil2.Hil2):
         
 def can_send_test(h: hil2.Hil2):
     vcan = h.can("HIL2", "VCAN")
+    mcan = h.can("HIL2", "MCAN")
 
     # print("Sending CAN messages on VCAN...")
     # val = 0
@@ -217,6 +218,11 @@ def can_send_test(h: hil2.Hil2):
         msg_ids = list(set([msg.signal for msg in msgs]))
         print(f"\tRECV: {msg_ids}")
         vcan.clear()
+
+        msgs = mcan.get_all()
+        msg_ids = list(set([msg.signal for msg in msgs]))
+        print(f"\tRECV: {msg_ids}")
+        mcan.clear()
 
         time.sleep(1)
 
