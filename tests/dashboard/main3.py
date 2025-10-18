@@ -20,10 +20,11 @@ BRAKE_PERCENT = 0.0 # precent
 BRAKE_TOL = 10
 THROTTLE_TOL = 10
 
-BRAKE1_RAW = 300
-BRAKE2_RAW = 300
-THROTTLE2_RAW = 300
-THROTTLE1_V_TO_ADC = lambda v: (v / 5.0) * 4095
+# BRAKE1_RAW = 300
+# BRAKE2_RAW = 300
+# THROTTLE2_RAW = 300
+V_TO_ADC = lambda v: (v / 5.0) * 4095
+V_TO_ADC_INV = lambda v: 4095 - V_TO_ADC(v)
 
 def check_msg(msg: Optional[can_helper.CanMessage], v: float, test_prefix: str):
     mka.assert_true(msg is not None, f"{test_prefix}: VCAN message received")
@@ -37,11 +38,12 @@ def check_msg(msg: Optional[can_helper.CanMessage], v: float, test_prefix: str):
 
     logging.info(f"{test_prefix}: throttle={throttle}, brake={brake}, throttle_right={throttle_right}, brake_right={brake_right}")
 
-    throttle_exp = THROTTLE1_V_TO_ADC(v)
-    mka.assert_eqf(brake, BRAKE1_RAW, BRAKE_TOL, f"{test_prefix}: brake ({brake}) should be approximately {BRAKE1_RAW}")
-    mka.assert_eqf(brake_right, BRAKE2_RAW, BRAKE_TOL, f"{test_prefix}: brake_right ({brake_right}) should be approximately {BRAKE2_RAW}")
-    mka.assert_eqf(throttle_right, THROTTLE2_RAW, THROTTLE_TOL, f"{test_prefix}: throttle_right ({throttle_right}) should be approximately {THROTTLE2_RAW}")
-    mka.assert_eqf(throttle, throttle_exp, THROTTLE_TOL, f"{test_prefix}: throttle ({throttle}) should be approximately {throttle_exp}")
+    adc_exp = V_TO_ADC_INV(v)
+    adc_exp_inv = V_TO_ADC(v)
+    mka.assert_eqf(brake, adc_exp, BRAKE_TOL, f"{test_prefix}: brake ({brake}) should be approximately {adc_exp}")
+    mka.assert_eqf(brake_right, adc_exp, BRAKE_TOL, f"{test_prefix}: brake_right ({brake_right}) should be approximately {adc_exp}")
+    mka.assert_eqf(throttle, adc_exp, THROTTLE_TOL, f"{test_prefix}: throttle ({throttle}) should be approximately {adc_exp}")
+    mka.assert_eqf(throttle_right, adc_exp_inv, THROTTLE_TOL, f"{test_prefix}: throttle_right ({throttle_right}) should be approximately {adc_exp_inv}")
 
 
 def t_4_2_5_test(h: hil2.Hil2):
@@ -67,17 +69,18 @@ def t_4_2_5_test(h: hil2.Hil2):
     - Just check that the message is correct (throttle 50%, brake 0%)
     """
     
-    brake1 = h.do("HIL2", "DO1")
-    brake2 = h.do("HIL2", "DO5")
-    throttle1 = h.ao("HIL2", "DAC3")
-    throttle2 = h.do("HIL2", "DO9")
+    # brake1 = h.do("HIL2", "DO1")
+    # brake2 = h.do("HIL2", "DO5")
+    # throttle1 = h.ao("HIL2", "DAC3")
+    # throttle2 = h.do("HIL2", "DO9")
 
     vcan = h.can("HIL2", "VCAN")
+    dac = h.ao("HIL2", "DAC1")
 
-    brake1.set(True)
-    brake2.set(True)
-    throttle1.set(2.5)
-    throttle2.set(True)
+    # brake1.set(True)
+    # brake2.set(True)
+    # throttle1.set(2.5)
+    # throttle2.set(True)
 
     input("Setup (brakes 0%, throttle 50%), press Enter to continue...")
 
@@ -98,7 +101,7 @@ def t_4_2_5_test(h: hil2.Hil2):
     for i in range(5, 46, 1):
         vcan.clear()
         v = i / 10.0
-        throttle1.set(v)
+        dac.set(v)
         time.sleep(0.02)
 
         msg = vcan.get_last(MSG_NAME)
