@@ -8,6 +8,7 @@ Hardware in the loop firmware, test engine, and test scripts for Purdue Electric
 - `./hil2`: the main HIL "engine"
 - `./mk_assert`: a simple and low magic test framework
 - `./device_configs`: the device configuration files
+- `./netmaps`: exported from Altium, maps signal names to physical locations
 - `./tests`: the test scripts and configuration files
 
 ## Python libraries
