@@ -1,6 +1,6 @@
 # HIL2 Tester for PER
 
-Rewritting HIL 2 from scratch because I have nothing but time and other things I do not want to do
+Hardware in the loop firmware, test engine, and test scripts for Purdue Electric Racing ([docs](https://lelserslasers.github.io/PER-HIL2/)).
 
 ## Folders
 
@@ -15,7 +15,7 @@ Rewritting HIL 2 from scratch because I have nothing but time and other things I
 To install the required Python libraries, run:
 
 ```bash
-pip install -r requirements.txt
+python3 -m pip install -r requirements.txt
 ```
 
 - `pyserial` for serial communication
