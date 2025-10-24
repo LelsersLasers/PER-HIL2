@@ -51,7 +51,8 @@ def set_both(pedal1: hil2_comp.AO, pedal2: hil2_comp.AO, percent: float) -> None
     :param pedal2: Second pedal AO component
     :param percent: Percent value from 0 to 100
     """
-    pedal1.set(pe
+    pedal1.set(percent)
+    pedal2.set(percent)
 
 def check_msg(msg: Optional[can_helper.CanMessage], test_prefix: str):
     mka.assert_true(msg is not None, f"{test_prefix}: VCAN message received")

@@ -202,33 +202,46 @@ def can_recv_test(h: hil2.Hil2):
         
 def can_send_test(h: hil2.Hil2):
     vcan = h.can("HIL2", "VCAN")
+    # mcan = h.can("HIL2", "MCAN")
 
-    print("Sending CAN messages on VCAN...")
-    val = 0
+    brake1 = h.do("HIL2", "DO1")
+
+    brake1.set(True)
+
+    # print("Sending CAN messages on VCAN...")
+    # val = 0
     while True:
-        print(f"Sending CAN message: main_hb_amk, start: {val}")
-        vcan.send("main_hb_amk", { "precharge_state": 1, "car_state": val })
-        if val == 0:
-            val = 1
-        else:
-            val = 0
+        # print(f"Sending CAN message: main_hb_amk, start: {val}")
+        # vcan.send("main_hb_amk", { "precharge_state": 1, "car_state": val })
+        # if val == 0:
+        #     val = 1
+        # else:
+        #     val = 0
 
         msgs = vcan.get_all()
-        msg_ids = list(set([msg.signal for msg in msgs]))
-        print(f"\tRECV: {msg_ids}")
+        # msg_ids = list(set([msg.signal for msg in msgs]))
+        # print(f"\tRECV: {msg_ids}")
+        t = time.time()
+        for msg in msgs:
+            print(f"{t}\t, \t{msg.signal}, \t{msg.data}")
         vcan.clear()
 
-        time.sleep(1)
+        # msgs = mcan.get_all()
+        # msg_ids = list(set([msg.signal for msg in msgs]))
+        # print(f"\tRECV: {msg_ids}")
+        # mcan.clear()
+
+        time.sleep(0.2)
 
 
 def main():
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     
     with hil2.Hil2(
         "./tests/example/config.json",
         "device_configs",
         None,
-        "/home/ronak/coding/PER/firmware/common/daq"
+        "./tests/dashboard/dbc"
     ) as h:
         # mka.add_test(do_di_test, h)
         # mka.add_test(ao_ai_test, h)

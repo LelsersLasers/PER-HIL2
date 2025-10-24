@@ -43,8 +43,8 @@
     ],
 
     "can": [
-        { "bus":1, "name":"VCAN", "dbc_file": "per_dbc_MCAN.dbc", "notes":"Vechicle CAN Bus" },
-        { "bus":2, "name":"MCAN", "dbc_file": "per_dbc_VCAN.dbc", "notes":"Motor CAN Bus" }
+        { "bus":1, "name":"VCAN", "dbc_file": "per_dbc_VCAN.dbc", "notes":"Vechicle CAN Bus" },
+        { "bus":2, "name":"MCAN", "dbc_file": "per_dbc_MCAN.dbc", "notes":"Motor CAN Bus" }
     ],
     
     "adc_config": {
