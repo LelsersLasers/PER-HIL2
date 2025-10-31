@@ -1,6 +1,7 @@
 import hil2.hil2 as hil2
 import mk_assert.mk_assert as mka
 import time
+import random
 
 import logging
 
@@ -210,28 +211,31 @@ def can_send_test(h: hil2.Hil2):
 
     # print("Sending CAN messages on VCAN...")
     # val = 0
+    data = {
+        "right_shock": 0,
+        "left_shock": 0,
+    }
     while True:
-        # print(f"Sending CAN message: main_hb_amk, start: {val}")
-        # vcan.send("main_hb_amk", { "precharge_state": 1, "car_state": val })
-        # if val == 0:
-        #     val = 1
-        # else:
-        #     val = 0
+        data["right_shock"] = random.randint(0, 100)
+        data["left_shock"] = random.randint(0, 100)
 
-        msgs = vcan.get_all()
-        # msg_ids = list(set([msg.signal for msg in msgs]))
-        # print(f"\tRECV: {msg_ids}")
-        t = time.time()
-        for msg in msgs:
-            print(f"{t}\t, \t{msg.signal}, \t{msg.data}")
+        print(f"Sending CAN message: shock_rear (f{data['right_shock']}, {data['left_shock']})")
+        vcan.send("shock_rear", data)
         vcan.clear()
+        # msgs = vcan.get_all()
+        # # msg_ids = list(set([msg.signal for msg in msgs]))
+        # # print(f"\tRECV: {msg_ids}")
+        # t = time.time()
+        # for msg in msgs:
+        #     print(f"{t}\t, \t{msg.signal}, \t{msg.data}")
+        # vcan.clear()
 
         # msgs = mcan.get_all()
         # msg_ids = list(set([msg.signal for msg in msgs]))
         # print(f"\tRECV: {msg_ids}")
         # mcan.clear()
 
-        time.sleep(0.2)
+        time.sleep(1/3)
 
 
 def main():
